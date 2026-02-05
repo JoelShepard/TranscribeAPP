@@ -9,6 +9,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1000,
     height: 800,
+    autoHideMenuBar: true, // Hide the menu bar
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -16,6 +17,7 @@ function createWindow() {
     }
   });
 
+  win.setMenu(null); // Explicitly remove the menu
   win.loadFile(path.join(__dirname, '../dist/index.html'));
 }
 

@@ -100,3 +100,4 @@ This document serves as the primary instruction set for AI agents and developers
 2.  **Verify:** After making changes, run `bun run build` to ensure no compilation errors.
 3.  **Clean Up:** Remove unused files or imports introduced during refactoring.
 4.  **No Placeholders:** implementation should be complete. If a placeholder is strictly necessary, mark it with `TODO:`.
+5.  **Milestones Execution:** Upon start, read the `MILESTONES.md` file. Start working on the first unchecked milestone (`[ ]`). Once completed, update `MILESTONES.md` to mark it as checked (`[x]`).
