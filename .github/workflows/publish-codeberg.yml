@@ -20,6 +20,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install Docker Client
+        run: |
+          apt-get update
+          apt-get install -y docker.io
+
       - name: Log in to Codeberg Registry
         uses: docker/login-action@v3
         with:
