@@ -3,7 +3,7 @@ name: Publish Docker Image to Codeberg
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch: # Permette di avviare il workflow manualmente
+  workflow_dispatch:
 
 env:
   REGISTRY: codeberg.org
@@ -20,8 +20,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Install Docker Client
+        run: |
+          apt-get update
+          apt-get install -y docker.io
 
       - name: Log in to Codeberg Registry
         uses: docker/login-action@v3
@@ -40,12 +42,12 @@ jobs:
             type=sha,format=short
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          # Usa la cache di GitHub per velocizzare le build successive
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+        run: |
+          # Costruisci l'immagine usando i tag generati (prendiamo il primo tag della lista o latest)
+          # Nota: metadata-action outputta i tag separati da newline.
+          # Per semplicità in shell, usiamo il tag latest se siamo su main, e costruiamo esplicitamente.
+          
+          FULL_IMAGE_NAME="${{ env.REGISTRY }}/${{ secrets.CODEBERG_USERNAME }}/${{ env.IMAGE_NAME }}"
+          
+          docker build -t $FULL_IMAGE_NAME:latest .
+          docker push $FULL_IMAGE_NAME:latest
