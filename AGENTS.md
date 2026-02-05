@@ -7,7 +7,8 @@ This document serves as the primary instruction set for AI agents and developers
 **Tech Stack:**
 - **Runtime:** Bun (v1.3+) - *Do not use Node.js/npm directly.*
 - **Frontend:** React 19, TypeScript, TailwindCSS v4.
-- **Desktop:** Electron (Main process in `electron/`).
+- **Desktop (New):** Tauri v2 (Rust-based backend, uses `src-tauri/`).
+- **Desktop (Legacy):** Electron (Main process in `electron/`). *Note: Tauri is now preferred for Linux builds.*
 - **Mobile:** Capacitor (Android).
 - **Bundler:** Custom build scripts (`build.ts`, `dev.ts`) using `bun build`.
 
@@ -15,6 +16,7 @@ This document serves as the primary instruction set for AI agents and developers
 - Always use `bun` for package management and script execution.
 - `dist/` is the build output directory; do not edit files there manually.
 - The project uses ESM modules (`type: "module"` in `package.json`).
+- **Arch Linux:** The primary development and build target is Arch Linux.
 
 ## 2. Build, Test, and Execution
 
@@ -24,10 +26,11 @@ This document serves as the primary instruction set for AI agents and developers
 | **Install** | `bun install` | Install dependencies. |
 | **Dev (Web)** | `bun run dev` | Hot-reloading server for web/UI development. |
 | **Build (Web)** | `bun run build` | Compiles React/TS to `./dist`. |
-| **Run (Electron)** | `bun run build && bunx electron electron/main.js` | Fast dev loop for Electron without packaging. |
-| **Package (Linux)**| `bun run build && bunx electron-builder` | Builds `.AppImage` in `dist/`. |
+| **Run (Tauri)** | `bun run dev:tauri` | Starts Tauri dev environment with hot-reload. |
+| **Build (Tauri)** | `bun run build:tauri` | Compiles optimized Tauri binary for Linux. |
+| **Pkg (Arch)** | `makepkg -si` | Builds and installs full Arch Linux package (PKGBUILD). |
+| **Run (Electron)** | `bun run build && bunx electron electron/main.js` | Legacy run command. |
 | **Android Sync** | `bun run cap:sync` | Builds and syncs assets to Android project. |
-| **Android Run** | `bun run cap:android` | Syncs and opens Android Studio. |
 
 ### Testing
 - **Runner:** `bun test` (Built-in Bun test runner).
@@ -46,6 +49,8 @@ This document serves as the primary instruction set for AI agents and developers
   ```
 - **Hooks:** Prioritize custom hooks for logic reuse. Place in `src/hooks/` if shared.
 - **State:** Use `useState` for local UI state. Use Context for global app state (e.g. auth, settings).
+- **Platform Detection:** Use `src/utils/platform.ts` to detect environment (e.g., `isTauri()`).
+- **Window Decorations:** For Tauri, use the custom `TitleBar` component (`src/components/TitleBar.tsx`).
 
 ### Styling (TailwindCSS)
 - **Version:** TailwindCSS v4.
@@ -69,22 +74,16 @@ This document serves as the primary instruction set for AI agents and developers
 - **Types/Interfaces:** `PascalCase` (e.g., `AudioMetadata`).
 - **Constants:** `UPPER_SNAKE_CASE` for global constants.
 
-### Imports
-- **Grouping:** 
-  1. React / External Libraries
-  2. Local Services / Utils
-  3. Components
-  4. Styles / Assets
-- **Paths:** Use relative imports for now (e.g., `../../services/`).
-
 ## 4. Architecture & Services
 
 - **`src/services/`**: Contains core business logic.
   - **`audio/`**: Audio processing logic (duration, conversion, splitting).
   - **`mistral/`**: API clients and interactions.
-- **`electron/`**: Electron main process code.
-  - **Security:** Keep `nodeIntegration: true` only if strictly necessary (currently enabled). 
-  - **IPC:** Use `ipcMain` and `ipcRenderer` for communication if expanding features.
+- **`src-tauri/`**: Tauri backend (Rust).
+  - Contains `tauri.conf.json` for configuration.
+  - Contains `Cargo.toml` for Rust dependencies.
+  - Use `makepkg` (Arch) for final distribution.
+- **`electron/`**: Legacy Electron main process (kept for reference or fallback).
 
 ## 5. Error Handling
 
