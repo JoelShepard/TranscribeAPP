@@ -36,6 +36,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
+          # Nota: metadata-action gestisce automaticamente la conversione in lowercase
           images: ${{ env.REGISTRY }}/${{ secrets.CODEBERG_USERNAME }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
@@ -46,8 +47,10 @@ jobs:
           # Costruisci l'immagine usando i tag generati (prendiamo il primo tag della lista o latest)
           # Nota: metadata-action outputta i tag separati da newline.
           # Per semplicità in shell, usiamo il tag latest se siamo su main, e costruiamo esplicitamente.
+          # Convertiamo l'username in minuscolo per conformità Docker
           
-          FULL_IMAGE_NAME="${{ env.REGISTRY }}/${{ secrets.CODEBERG_USERNAME }}/${{ env.IMAGE_NAME }}"
+          USERNAME=$(echo "${{ secrets.CODEBERG_USERNAME }}" | tr '[:upper:]' '[:lower:]')
+          FULL_IMAGE_NAME="${{ env.REGISTRY }}/$USERNAME/${{ env.IMAGE_NAME }}"
           
           docker build -t $FULL_IMAGE_NAME:latest .
           docker push $FULL_IMAGE_NAME:latest
