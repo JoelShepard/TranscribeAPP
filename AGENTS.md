@@ -26,7 +26,8 @@ This document serves as the primary instruction set for AI agents and developers
 | **Build (Web)** | `bun run build` | Compiles React/TS to `./dist`. |
 | **Run (Electron)** | `bun run build && bunx electron electron/main.js` | Fast dev loop for Electron without packaging. |
 | **Package (Linux)**| `bun run build && bunx electron-builder` | Builds `.AppImage` in `dist/`. |
-| **Android** | `bun run cap:android` | Syncs and opens Android Studio. |
+| **Android Sync** | `bun run cap:sync` | Builds and syncs assets to Android project. |
+| **Android Run** | `bun run cap:android` | Syncs and opens Android Studio. |
 
 ### Testing
 - **Runner:** `bun test` (Built-in Bun test runner).

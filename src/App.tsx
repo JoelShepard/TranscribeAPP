@@ -1,8 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, FileAudio, Settings, Save, Copy, Loader2, StopCircle, Sun, Moon } from 'lucide-react';
+import { Mic, FileAudio, Settings, Save, Copy, Loader2, StopCircle, Sun, Moon, AudioLines } from 'lucide-react';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 import { audioProcessor } from './services/audio/AudioProcessor';
 import { MistralClient } from './services/mistral/MistralClient';
 import { useTheme } from './context/ThemeContext';
+import { TitleBar } from './components/TitleBar';
+import { isTauri } from './utils/platform';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 type Status = 'idle' | 'recording' | 'processing' | 'transcribing' | 'done' | 'error';
 
@@ -14,12 +22,14 @@ export default function App() {
   const [progress, setProgress] = useState('');
   const [transcription, setTranscription] = useState('');
   const [error, setError] = useState('');
+  const [tauriEnv, setTauriEnv] = useState(false);
   
   // Recording refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
+    setTauriEnv(isTauri());
     const storedKey = localStorage.getItem('mistral_api_key');
     if (storedKey) setApiKey(storedKey);
     
@@ -161,14 +171,31 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200">
+    <div className={cn(
+      "min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200",
+      tauriEnv && "pt-10"
+    )}>
+      <TitleBar />
       {/* Header */}
-      <header className="bg-white dark:bg-gray-900 shadow-sm dark:border-b dark:border-gray-800 sticky top-0 z-10 transition-colors duration-200">
+      <header className={cn(
+        "bg-white dark:bg-gray-900 shadow-sm dark:border-b dark:border-gray-800 sticky top-0 z-10 transition-colors duration-200 pt-[env(safe-area-inset-top)]",
+        tauriEnv && "top-10"
+      )}>
         <div className="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">T</div>
-             <h1 className="text-xl font-bold text-gray-800 dark:text-white">TranscribeJS</h1>
-          </div>
+          <button 
+            onClick={() => {
+              setStatus('idle');
+              setTranscription('');
+              setError('');
+            }}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            aria-label="Go to Home"
+          >
+             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-md shadow-blue-200 dark:shadow-none">
+               <AudioLines className="w-5 h-5" />
+             </div>
+             <h1 className="text-xl font-bold text-gray-800 dark:text-white tracking-tight">TranscribeJS</h1>
+          </button>
           <div className="flex items-center gap-2">
             <button 
               onClick={toggleTheme}
