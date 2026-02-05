@@ -1,0 +1,45 @@
+export class MistralClient {
+  private apiKey: string;
+  private baseUrl = "https://api.mistral.ai/v1";
+
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
+  }
+
+  async transcribe(audioBlob: Blob): Promise<string> {
+    console.log('[MistralClient] Starting transcription, blob size:', audioBlob.size);
+    
+    const formData = new FormData();
+    formData.append("file", audioBlob, "audio.mp3");
+    formData.append("model", "voxtral-mini-latest");
+
+    console.log('[MistralClient] Sending request to Mistral API...');
+    const response = await fetch(`${this.baseUrl}/audio/transcriptions`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${this.apiKey}`,
+      },
+      body: formData,
+    });
+
+    console.log('[MistralClient] Response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[MistralClient] Error response:', errorText);
+      let errorMessage = `HTTP ${response.status}: ${errorText}`;
+      try {
+        const json = JSON.parse(errorText);
+        if (json.error && json.error.message) {
+           errorMessage = json.error.message;
+        }
+      } catch (e) { /* ignore */ }
+      
+      throw new Error(errorMessage);
+    }
+
+    const result = await response.json();
+    console.log('[MistralClient] Transcription successful, result:', result);
+    return result.text;
+  }
+}

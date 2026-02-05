@@ -1,0 +1,53 @@
+{
+  "name": "transcribeapp",
+  "productName": "TranscribeJS",
+  "version": "0.1.0",
+  "description": "TranscribeJS desktop app",
+  "author": "JoeShep",
+  "main": "electron/main.js",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun run dev.ts",
+    "build": "bun run build.ts",
+    "cap:sync": "bun run build && bunx cap sync",
+    "cap:android": "bun run cap:sync && bunx cap open android"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.0.2",
+    "@capacitor/cli": "^8.0.2",
+    "@capacitor/core": "^8.0.2",
+    "@tailwindcss/cli": "^4.1.18",
+    "@types/bun": "latest",
+    "@types/react": "^19.2.13",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.4.24",
+    "electron": "^40.1.0",
+    "electron-builder": "^26.7.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.563.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "tailwind-merge": "^3.4.0"
+  },
+  "build": {
+    "appId": "com.joeshep.transcribejs",
+    "files": [
+      "dist/**",
+      "electron/**",
+      "package.json"
+    ],
+    "linux": {
+      "target": ["AppImage"],
+      "category": "Utility"
+    }
+  }
+}
