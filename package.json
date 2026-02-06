@@ -1,7 +1,7 @@
 {
   "name": "transcribeapp",
   "productName": "TranscribeJS",
-  "version": "0.1.0",
+  "version": "0.1.3",
   "description": "TranscribeJS desktop app",
   "author": "JoeShep",
   "main": "electron/main.js",
