@@ -36,6 +36,21 @@ Commands:
 - Image path format: `ghcr.io/<owner>/<repo>` (lowercased by workflow).
 - Authentication uses the built-in `GITHUB_TOKEN` (no personal access token required for the default setup).
 
+## Android APK Release (GitHub)
+
+- APK publishing is handled by `.github/workflows/release-android-apk.yml`.
+- The workflow runs when a tag matching `v*` is pushed and uploads a signed APK to the corresponding GitHub Release.
+- Required repository secrets:
+  - `ANDROID_KEYSTORE_BASE64`
+  - `ANDROID_KEYSTORE_PASSWORD`
+  - `ANDROID_KEY_ALIAS`
+  - `ANDROID_KEY_PASSWORD`
+- Example (Linux) to create `ANDROID_KEYSTORE_BASE64`: `base64 -w 0 android/app/release-key.jks`
+- The APK is attached with filename `TranscribeJS-android-vX.Y.Z.apk`, plus a `.sha256` checksum file.
+- Tag push flow (example):
+  - `git tag -a v0.1.6 -m "Release v0.1.6"`
+  - `git push origin v0.1.6`
+
 ## Tech Stack
 
 - Runtime: Bun
