@@ -110,3 +110,23 @@ This document serves as the primary instruction set for AI agents and developers
 - **Trigger Policy:** Container publish runs only on pushes of tags matching `v*`.
 - **Auth Policy:** Prefer `${{ secrets.GITHUB_TOKEN }}` for GHCR publish. Do not introduce a PAT unless explicitly required.
 - **Naming:** GHCR image names must be lowercase (`ghcr.io/<owner>/<repo>`).
+
+### Release Tag Push Flow
+
+To trigger container publish, create and push an annotated version tag after pushing `main`:
+
+```bash
+git add .
+git commit -m "chore: prepare release"
+git push origin main
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
+```
+
+Compact variant:
+
+```bash
+git commit -m "chore: prepare release"
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git push origin main --follow-tags
+```
