@@ -48,8 +48,8 @@ Commands:
 - Example (Linux) to create `ANDROID_KEYSTORE_BASE64`: `base64 -w 0 android/app/release-key.jks`
 - The APK is attached with filename `TranscribeJS-android-vX.Y.Z.apk`, plus a `.sha256` checksum file.
 - Tag push flow (example):
-  - `git tag -a v0.1.6 -m "Release v0.1.6"`
-  - `git push origin v0.1.6`
+  - `git tag -a v0.1.7 -m "Release v0.1.7"`
+  - `git push origin v0.1.7`
 
 ## Tech Stack
 
