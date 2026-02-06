@@ -9,7 +9,6 @@ release/
 
 # Arch package artifacts
 pkg/
-src/
 *.pkg.tar
 *.pkg.tar.*
 
