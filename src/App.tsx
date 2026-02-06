@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Mic, FileAudio, Settings, Save, Copy, Loader2, StopCircle, Sun, Moon, AudioLines } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { invoke } from '@tauri-apps/api/core';
 import { audioProcessor } from './services/audio/AudioProcessor';
 import { MistralClient } from './services/mistral/MistralClient';
 import { useTheme } from './context/ThemeContext';
 import { TitleBar } from './components/TitleBar';
-import { isTauri } from './utils/platform';
+import { isTauriRuntime } from './utils/platform';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -28,7 +29,7 @@ function getRecordingErrorMessage(
 
   if (name === 'NotAllowedError' || message?.toLowerCase().includes('permission denied')) {
     if (isLinuxTauri) {
-      return 'Microphone recording is currently limited on Linux Tauri builds (WebKitGTK). Use Upload Audio, or run the legacy Electron build for recording support.';
+      return 'Browser-level microphone access failed on Linux Tauri. Native recorder should be used automatically; try recording again.';
     }
 
     return 'Microphone permission denied. Enable microphone access for this app in system/browser settings and try again.';
@@ -40,10 +41,31 @@ function getRecordingErrorMessage(
     return 'Microphone is busy or unavailable. Close other apps using it and try again.';
   }
   if (name === 'SecurityError') {
-    return 'Recording requires a secure context. Start the app with `bun run dev`, `bun run dev:tauri`, or desktop build.';
+    return 'Recording requires a secure context. Start the app with `bun run dev` or `bun run dev:tauri`.';
   }
 
   return `Microphone access error: ${name || 'Unknown'} (${message || 'No details'})`;
+}
+
+function getErrorDetails(err: unknown): string {
+  if (typeof err === 'string') {
+    return err;
+  }
+
+  if (err && typeof err === 'object') {
+    const maybeMessage = (err as any).message;
+    if (typeof maybeMessage === 'string' && maybeMessage.length > 0) {
+      return maybeMessage;
+    }
+
+    try {
+      return JSON.stringify(err);
+    } catch {
+      return 'Unknown error';
+    }
+  }
+
+  return 'Unknown error';
 }
 
 export default function App() {
@@ -64,7 +86,7 @@ export default function App() {
   const chunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
-    setTauriEnv(isTauri());
+    setTauriEnv(isTauriRuntime());
     setLinuxEnv(isLinuxPlatform());
     const storedKey = localStorage.getItem('mistral_api_key');
     if (storedKey) setApiKey(storedKey);
@@ -83,6 +105,22 @@ export default function App() {
   };
 
   const startRecording = async () => {
+    const useNativeRecorder = tauriEnv && linuxEnv;
+
+    if (useNativeRecorder) {
+      try {
+        setError('');
+        console.log('[App] Starting native microphone recording...');
+        await invoke('start_native_recording');
+        setStatus('recording');
+      } catch (err: unknown) {
+        console.error('[App] Error starting native recording:', err);
+        setError(`Native microphone error: ${getErrorDetails(err)}`);
+        setStatus('error');
+      }
+      return;
+    }
+
     if (!navigator.mediaDevices?.getUserMedia) {
       setError('Recording is not supported in this environment. Use Upload Audio as fallback.');
       setStatus('error');
@@ -143,8 +181,30 @@ export default function App() {
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && status === 'recording') {
+  const stopRecording = async () => {
+    if (status !== 'recording') {
+      return;
+    }
+
+    const useNativeRecorder = tauriEnv && linuxEnv;
+    if (useNativeRecorder) {
+      try {
+        setStatus('processing');
+        setProgress('Finalizing native recording...');
+        const audioBytes = await invoke<number[]>('stop_native_recording');
+        const audioData = Uint8Array.from(audioBytes);
+        const file = new File([audioData], 'recording.wav', { type: 'audio/wav' });
+        await processAudio(file);
+      } catch (err: unknown) {
+        console.error('[App] Error stopping native recording:', err);
+        setError(`Native microphone error: ${getErrorDetails(err)}`);
+        setProgress('');
+        setStatus('error');
+      }
+      return;
+    }
+
+    if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
     }
   };
@@ -153,6 +213,12 @@ export default function App() {
     return () => {
       mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
       mediaStreamRef.current = null;
+
+      if (isTauriRuntime() && isLinuxPlatform()) {
+        void invoke('stop_native_recording').catch(() => {
+          // Ignore cleanup errors.
+        });
+      }
     };
   }, []);
 
@@ -329,8 +395,8 @@ export default function App() {
         )}
 
         {tauriEnv && linuxEnv && (status === 'idle' || status === 'error') && (
-            <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
-                Linux Tauri note: microphone recording may fail due to current WebKitGTK limitations. If recording fails, use Upload Audio or run the legacy Electron build (`bun run build && bunx electron electron/main.js`).
+            <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                Linux Tauri note: microphone recording uses a native backend (no browser permission prompt required).
             </div>
         )}
 

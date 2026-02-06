@@ -7,9 +7,9 @@ This document serves as the primary instruction set for AI agents and developers
 **Tech Stack:**
 - **Runtime:** Bun (v1.3+) - *Do not use Node.js/npm directly.*
 - **Frontend:** React 19, TypeScript, TailwindCSS v4.
-- **Desktop (New):** Tauri v2 (Rust-based backend, uses `src-tauri/`).
-- **Desktop (Legacy):** Electron (Main process in `electron/`). *Note: Tauri is now preferred for Linux builds.*
+- **Desktop:** Tauri v2 (Rust-based backend, uses `src-tauri/`).
 - **Mobile:** Capacitor (Android).
+- **Web Deployment:** Dockerized web app image.
 - **Bundler:** Custom build scripts (`build.ts`, `dev.ts`) using `bun build`.
 
 **Key Constraints:**
@@ -29,7 +29,6 @@ This document serves as the primary instruction set for AI agents and developers
 | **Run (Tauri)** | `bun run dev:tauri` | Starts Tauri dev environment with hot-reload. |
 | **Build (Tauri)** | `bun run build:tauri` | Compiles optimized Tauri binary for Linux. |
 | **Pkg (Arch)** | `makepkg -si` | Builds and installs full Arch Linux package (PKGBUILD). |
-| **Run (Electron)** | `bun run build && bunx electron electron/main.js` | Legacy run command. |
 | **Android Sync** | `bun run cap:sync` | Builds and syncs assets to Android project. |
 
 ### Testing
@@ -49,7 +48,7 @@ This document serves as the primary instruction set for AI agents and developers
   ```
 - **Hooks:** Prioritize custom hooks for logic reuse. Place in `src/hooks/` if shared.
 - **State:** Use `useState` for local UI state. Use Context for global app state (e.g. auth, settings).
-- **Platform Detection:** Use `src/utils/platform.ts` to detect environment (e.g., `isTauri()`).
+- **Platform Detection:** Use `src/utils/platform.ts` to detect environment (e.g., `isTauriRuntime()`).
 - **Window Decorations:** For Tauri, use the custom `TitleBar` component (`src/components/TitleBar.tsx`).
 
 ### Styling (TailwindCSS)
@@ -83,7 +82,6 @@ This document serves as the primary instruction set for AI agents and developers
   - Contains `tauri.conf.json` for configuration.
   - Contains `Cargo.toml` for Rust dependencies.
   - Use `makepkg` (Arch) for final distribution.
-- **`electron/`**: Legacy Electron main process (kept for reference or fallback).
 
 ## 5. Error Handling
 

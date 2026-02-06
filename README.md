@@ -2,53 +2,59 @@
 
 TranscribeJS is an audio transcription app powered by Mistral AI, built with React, TypeScript, and Bun.
 
-## Features
+## Supported Targets
 
-- Audio transcription from uploaded or recorded audio.
-- Mistral API integration for high-quality transcription.
-- Smart preprocessing (normalization and long-audio splitting).
-- Multi-platform targets: Tauri desktop (preferred), legacy Electron desktop, and Android via Capacitor.
+- Linux native desktop app with Tauri v2 (Rust backend, native microphone recording on Linux)
+- Android app via Capacitor
+- Web app packaged and served with Docker
 
-## Build and Run
+## Requirements
 
-Prerequisites:
+- Bun v1.3+
+- Rust toolchain (for Tauri)
+- Tauri v2 Linux system dependencies
+- Android Studio + Android SDK (for Android builds)
+- Docker (for containerized web app)
 
-- [Bun](https://bun.com) v1.3+
-- (Optional, desktop) Tauri v2 system dependencies for Linux builds
-
-Commands:
+## Commands
 
 | Action | Command | Description |
 | :--- | :--- | :--- |
 | **Install** | `bun install` | Install dependencies. |
-| **Dev (Web)** | `bun run dev` | Start hot-reloading web development server. |
+| **Dev (Web)** | `bun run dev` | Start web dev server with hot reload. |
 | **Build (Web)** | `bun run build` | Build web assets into `dist/`. |
-| **Dev (Tauri)** | `bun run dev:tauri` | Start Tauri dev environment with hot-reload. |
-| **Build (Tauri)** | `bun run build:tauri` | Build optimized Tauri desktop app. |
-| **Run (Electron, legacy)** | `bun run build && bunx electron electron/main.js` | Run desktop app with legacy Electron entrypoint. |
-| **Android Sync** | `bun run cap:sync` | Build and sync assets to Android project. |
-| **Android Dev** | `bun run cap:android` | Sync assets and open Android Studio project. |
+| **Dev (Tauri)** | `bun run dev:tauri` | Start Tauri dev environment. |
+| **Build (Tauri)** | `bun run build:tauri` | Build Linux native Tauri app. |
+| **Android Sync** | `bun run cap:sync` | Build web assets and sync Android project. |
+| **Android Dev** | `bun run cap:android` | Sync and open Android Studio project. |
+| **Tests** | `bun test` | Run Bun test suite. |
 
-## Container Publishing (GitHub)
+## Docker Web App
 
-- Docker image publishing is handled by GitHub Actions workflow `.github/workflows/publish-ghcr.yml`.
-- The workflow builds and publishes to GHCR only when a tag matching `v*` is pushed.
-- Image path format: `ghcr.io/<owner>/<repo>` (lowercased by workflow).
-- Authentication uses the built-in `GITHUB_TOKEN` (no personal access token required for the default setup).
+Build and run the web app container:
 
-## Tech Stack
+```bash
+docker build -t transcribejs:web .
+docker run --rm -p 3000:3000 transcribejs:web
+```
 
-- Runtime: Bun
-- Frontend: React 19, TypeScript, TailwindCSS v4
-- Desktop: Tauri v2 (primary), Electron (legacy)
-- Mobile: Capacitor (Android)
+The app will be available at `http://localhost:3000`.
+
+## Arch Linux Packaging
+
+Build and install the native package:
+
+```bash
+makepkg -si
+```
 
 ## Project Structure
 
-- `src/`: React application source
-  - `src/services/`: audio processing and API service logic
-- `src-tauri/`: Tauri backend and configuration
-- `electron/`: legacy Electron main process
-- `dist/`: build output
-- `build.ts`: custom build script
-- `dev.ts`: custom dev server script
+- `src/`: React app
+- `src/services/`: audio processing + Mistral client
+- `src-tauri/`: Tauri Rust backend and config
+- `android/`: Capacitor Android project
+- `dist/`: generated web build output
+- `build.ts`: web build script
+- `dev.ts`: web dev server
+- `Dockerfile`: web app container build
