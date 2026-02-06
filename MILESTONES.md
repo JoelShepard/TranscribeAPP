@@ -1,6 +1,16 @@
-This is file represents the key objectives of this project. Feature and modifications that I want add to improve it.
-Check this file and tick the boxes when you implemented it and you're 100% sure
+# TranscribeJS Milestones
 
-- [x] Dark Mode
-- [x] Status Bar remove into the AppImage
-- [ ]
+Track important project goals here. Mark items as completed only when fully verified.
+
+## Completed
+
+- [x] Dark mode implemented.
+- [x] Status bar removed from AppImage desktop build.
+- [x] Repository migrated to GitHub (`JoelShepard/TranscribeAPP`).
+- [x] CI workflow migrated from Codeberg registry to GitHub Container Registry (GHCR).
+- [x] Automated Docker publish configured with tag-only release trigger (`v*`).
+
+## Next
+
+- [ ] Add a CI workflow to run tests (`bun test`) on pull requests.
+- [ ] Publish release artifacts (desktop builds) on GitHub Releases.

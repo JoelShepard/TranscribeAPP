@@ -101,3 +101,12 @@ This document serves as the primary instruction set for AI agents and developers
 3.  **Clean Up:** Remove unused files or imports introduced during refactoring.
 4.  **No Placeholders:** implementation should be complete. If a placeholder is strictly necessary, mark it with `TODO:`.
 5.  **Milestones Execution:** Upon start, read the `MILESTONES.md` file. Start working on the first unchecked milestone (`[ ]`). Once completed, update `MILESTONES.md` to mark it as checked (`[x]`).
+
+## 7. Repository & CI/CD (GitHub)
+
+- **Git Hosting:** The canonical remote is GitHub (`git@github.com:JoelShepard/TranscribeAPP.git`).
+- **Container Registry:** Docker images are published to **GHCR** (`ghcr.io`).
+- **Workflow File:** Use `.github/workflows/publish-ghcr.yml` for container build/publish.
+- **Trigger Policy:** Container publish runs only on pushes of tags matching `v*`.
+- **Auth Policy:** Prefer `${{ secrets.GITHUB_TOKEN }}` for GHCR publish. Do not introduce a PAT unless explicitly required.
+- **Naming:** GHCR image names must be lowercase (`ghcr.io/<owner>/<repo>`).

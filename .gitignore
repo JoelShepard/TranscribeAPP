@@ -1,46 +1,73 @@
-# dependencies (bun install)
-node_modules
+# Dependencies
+node_modules/
 
-# output
-out
-dist
-*.tgz
+# Build output
+dist/
+out/
+build/
+release/
+
+# Arch package artifacts
 pkg/
-*.pkg.tar.zst
+src/
+*.pkg.tar
+*.pkg.tar.*
 
-# secrets
+# Android and mobile build artifacts
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.apk
+*.aab
+*.ap_
+
+# Secrets and signing keys
 *.jks
 *.keystore
 
-# code coverage
-coverage
-*.lcov
-
-# logs
-logs
+# Logs and coverage
+logs/
 *.log
+coverage/
+*.lcov
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
-# dotenv environment variable files
+# Environment files
 .env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
+.env.*
 
-# caches
+# Caches
+.cache/
 .eslintcache
-.cache
 *.tsbuildinfo
 
-# IntelliJ based IDEs
-.idea
-
-# Finder (MacOS) folder config
-.DS_Store
-
-# Tauri
+# Rust/Tauri artifacts
 src-tauri/target/
+src-tauri/gen/
 
-# Local Runner
+# Packaged binaries and archives
+*.AppImage
+*.deb
+*.rpm
+*.snap
+*.dmg
+*.msi
+*.exe
+*.dll
+*.so
+*.dylib
+*.zip
+*.7z
+*.tar
+*.tar.gz
+*.tgz
+
+# IDE and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local runner config
 compose-runner.yml
