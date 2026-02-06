@@ -30,5 +30,5 @@ COPY --from=builder /app/package.json .
 # Espone la porta 3000
 EXPOSE 3000
 
-# Comando di avvio: bind esplicito su tutte le interfacce
-CMD ["bun", "x", "serve", "dist", "--single", "--listen", "tcp://0.0.0.0:3000"]
+# Comando di avvio: usa 'serve' per servire la cartella dist
+CMD ["bun", "x", "serve", "dist", "-p", "3000", "--single"]

@@ -14,6 +14,38 @@ function cn(...inputs: ClassValue[]) {
 
 type Status = 'idle' | 'recording' | 'processing' | 'transcribing' | 'done' | 'error';
 
+function isLinuxPlatform(): boolean {
+  return typeof navigator !== 'undefined' && /linux/i.test(navigator.userAgent);
+}
+
+function getRecordingErrorMessage(
+  err: unknown,
+  context: { tauriEnv: boolean; linuxEnv: boolean },
+): string {
+  const name = (err as any)?.name;
+  const message = (err as any)?.message;
+  const isLinuxTauri = context.tauriEnv && context.linuxEnv;
+
+  if (name === 'NotAllowedError' || message?.toLowerCase().includes('permission denied')) {
+    if (isLinuxTauri) {
+      return 'Microphone recording is currently limited on Linux Tauri builds (WebKitGTK). Use Upload Audio, or run the legacy Electron build for recording support.';
+    }
+
+    return 'Microphone permission denied. Enable microphone access for this app in system/browser settings and try again.';
+  }
+  if (name === 'NotFoundError') {
+    return 'No microphone detected. Connect a microphone and try again.';
+  }
+  if (name === 'NotReadableError') {
+    return 'Microphone is busy or unavailable. Close other apps using it and try again.';
+  }
+  if (name === 'SecurityError') {
+    return 'Recording requires a secure context. Start the app with `bun run dev`, `bun run dev:tauri`, or desktop build.';
+  }
+
+  return `Microphone access error: ${name || 'Unknown'} (${message || 'No details'})`;
+}
+
 export default function App() {
   const { theme, toggleTheme } = useTheme();
   const [apiKey, setApiKey] = useState('');
@@ -23,13 +55,17 @@ export default function App() {
   const [transcription, setTranscription] = useState('');
   const [error, setError] = useState('');
   const [tauriEnv, setTauriEnv] = useState(false);
+  const [linuxEnv, setLinuxEnv] = useState(false);
   
   // Recording refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const mediaMimeTypeRef = useRef('audio/webm');
   const chunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     setTauriEnv(isTauri());
+    setLinuxEnv(isLinuxPlatform());
     const storedKey = localStorage.getItem('mistral_api_key');
     if (storedKey) setApiKey(storedKey);
     
@@ -47,10 +83,39 @@ export default function App() {
   };
 
   const startRecording = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError('Recording is not supported in this environment. Use Upload Audio as fallback.');
+      setStatus('error');
+      return;
+    }
+
+    if (typeof MediaRecorder === 'undefined') {
+      setError('MediaRecorder is not available in this environment. Use Upload Audio as fallback.');
+      setStatus('error');
+      return;
+    }
+
     try {
+      console.log('[App] Requesting microphone access...');
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      console.log('[App] Available devices:', devices.map(d => `${d.kind}: ${d.label}`));
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      console.log('[App] Microphone access granted');
+      mediaStreamRef.current = stream;
+
+      const mimeTypeCandidates = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+      ];
+      const selectedMimeType = mimeTypeCandidates.find((candidate) => MediaRecorder.isTypeSupported(candidate));
+      const mediaRecorder = selectedMimeType
+        ? new MediaRecorder(stream, { mimeType: selectedMimeType })
+        : new MediaRecorder(stream);
+
       mediaRecorderRef.current = mediaRecorder;
+      mediaMimeTypeRef.current = selectedMimeType ?? 'audio/webm';
       chunksRef.current = [];
 
       mediaRecorder.ondataavailable = (e) => {
@@ -58,15 +123,22 @@ export default function App() {
       };
 
       mediaRecorder.onstop = async () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        const file = new File([blob], 'recording.webm', { type: 'audio/webm' });
+        const mimeType = mediaMimeTypeRef.current;
+        const extension = mimeType.includes('ogg') ? 'ogg' : 'webm';
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        const file = new File([blob], `recording.${extension}`, { type: mimeType });
+        mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+        mediaStreamRef.current = null;
         await processAudio(file);
       };
 
       mediaRecorder.start();
       setStatus('recording');
-    } catch (err) {
-      setError('Microphone access denied or not available.');
+    } catch (err: unknown) {
+      console.error('[App] Error starting recording:', err);
+      mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+      setError(getRecordingErrorMessage(err, { tauriEnv, linuxEnv }));
       setStatus('error');
     }
   };
@@ -76,6 +148,13 @@ export default function App() {
       mediaRecorderRef.current.stop();
     }
   };
+
+  useEffect(() => {
+    return () => {
+      mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    };
+  }, []);
 
   const processAudio = async (file: File) => {
     console.log('[App] Starting processAudio for file:', file.name, 'size:', file.size, 'type:', file.type);
@@ -246,6 +325,12 @@ export default function App() {
         {error && (
             <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-lg border border-red-200 dark:border-red-800 flex items-center gap-2">
                 <span className="font-bold">Error:</span> {error}
+            </div>
+        )}
+
+        {tauriEnv && linuxEnv && (status === 'idle' || status === 'error') && (
+            <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
+                Linux Tauri note: microphone recording may fail due to current WebKitGTK limitations. If recording fails, use Upload Audio or run the legacy Electron build (`bun run build && bunx electron electron/main.js`).
             </div>
         )}
 

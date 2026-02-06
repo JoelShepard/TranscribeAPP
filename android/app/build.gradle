@@ -1,6 +1,6 @@
 apply plugin: 'com.android.application'
 
-def appVersionName = (project.findProperty("APP_VERSION_NAME") ?: System.getenv("APP_VERSION_NAME") ?: "1.0").toString()
+def appVersionName = (project.findProperty("APP_VERSION_NAME") ?: System.getenv("APP_VERSION_NAME") ?: "0.1.7").toString()
 def appVersionCode = ((project.findProperty("APP_VERSION_CODE") ?: System.getenv("APP_VERSION_CODE") ?: "1") as String).toInteger()
 
 def releaseStorePath = (project.findProperty("TRANSCRIBE_KEYSTORE_PATH") ?: System.getenv("ANDROID_KEYSTORE_PATH") ?: "release-key.jks").toString()

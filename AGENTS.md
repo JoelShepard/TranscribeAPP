@@ -55,8 +55,6 @@ This document serves as the primary instruction set for AI agents and developers
 ### Styling (TailwindCSS)
 - **Version:** TailwindCSS v4.
 - **Usage:** Use utility classes directly in JSX.
-- **Source Detection Safety:** Keep `@source "./**/*.{ts,tsx,html}";` in `src/index.css` so production/Docker builds always scan app source files.
-- **Build Validation:** If UI styles look missing, verify `dist/index.css` contains utility classes (e.g. `.flex`, `.bg-blue-600`) and not only base/preflight styles.
 - **Conditional Classes:** Use `clsx` and `tailwind-merge`.
   ```tsx
   import { clsx } from 'clsx';
@@ -132,9 +130,3 @@ git commit -m "chore: prepare release"
 git tag -a vX.Y.Z -m "Release vX.Y.Z"
 git push origin main --follow-tags
 ```
-
-## 8. Gitignore Guardrails
-
-- Never ignore the frontend source directory (`src/`) in `.gitignore`.
-- Rationale: Tailwind v4 respects `.gitignore` when detecting sources; ignoring `src/` can strip most utility CSS from production and Docker images.
-- For Arch packaging artifacts, ignore `pkg/` and package archives only; do not add broad patterns that overlap the real app source tree.
