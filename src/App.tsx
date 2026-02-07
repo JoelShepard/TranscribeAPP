@@ -394,12 +394,6 @@ export default function App() {
             </div>
         )}
 
-        {tauriEnv && linuxEnv && (status === 'idle' || status === 'error') && (
-            <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                Linux Tauri note: microphone recording uses a native backend (no browser permission prompt required).
-            </div>
-        )}
-
         {/* Input Area */}
         {status === 'idle' || status === 'error' ? (
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

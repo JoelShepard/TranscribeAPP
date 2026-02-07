@@ -31,6 +31,7 @@ jobs:
             libwebkit2gtk-4.1-dev \
             libayatana-appindicator3-dev \
             librsvg2-dev \
+            xvfb \
             patchelf
 
       - name: Install dependencies
@@ -38,6 +39,22 @@ jobs:
 
       - name: Build desktop AppImage bundle
         run: bun run build:tauri -- --bundles appimage
+
+      - name: Smoke test AppImage startup
+        run: |
+          set -euo pipefail
+          APPIMAGE_SOURCE="$(ls src-tauri/target/release/bundle/appimage/*.AppImage)"
+          chmod +x "$APPIMAGE_SOURCE"
+
+          set +e
+          timeout 20s xvfb-run -a "$APPIMAGE_SOURCE" >/tmp/appimage-smoke.log 2>&1
+          exit_code=$?
+          set -e
+
+          if [ "$exit_code" -ne 0 ] && [ "$exit_code" -ne 124 ]; then
+            cat /tmp/appimage-smoke.log
+            exit "$exit_code"
+          fi
 
       - name: Extract release version from tag
         id: version

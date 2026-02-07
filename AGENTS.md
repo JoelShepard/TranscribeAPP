@@ -50,6 +50,7 @@ This document serves as the primary instruction set for AI agents and developers
 - **State:** Use `useState` for local UI state. Use Context for global app state (e.g. auth, settings).
 - **Platform Detection:** Use `src/utils/platform.ts` to detect environment (e.g., `isTauriRuntime()`).
 - **Window Decorations:** For Tauri, use the custom `TitleBar` component (`src/components/TitleBar.tsx`).
+- **Production UX:** Do not add platform/debug notice banners in the main UI unless explicitly requested by the user.
 
 ### Styling (TailwindCSS)
 - **Version:** TailwindCSS v4.
@@ -81,6 +82,7 @@ This document serves as the primary instruction set for AI agents and developers
 - **`src-tauri/`**: Tauri backend (Rust).
   - Contains `tauri.conf.json` for configuration.
   - Contains `Cargo.toml` for Rust dependencies.
+  - Keep the Linux AppImage runtime environment safeguards in `src-tauri/src/lib.rs` (AppImage startup compatibility).
   - Use `makepkg` (Arch) for final distribution.
 
 ## 5. Error Handling
@@ -99,6 +101,9 @@ This document serves as the primary instruction set for AI agents and developers
 3.  **Clean Up:** Remove unused files or imports introduced during refactoring.
 4.  **No Placeholders:** implementation should be complete. If a placeholder is strictly necessary, mark it with `TODO:`.
 5.  **Milestones Execution:** Upon start, read the `MILESTONES.md` file. Start working on the first unchecked milestone (`[ ]`). Once completed, update `MILESTONES.md` to mark it as checked (`[x]`).
+6.  **Release Branch Hygiene:** Before creating/pushing a release tag, run `git status --short`. If there are modified tracked source files (e.g. `src/**`, `src-tauri/**`), do not publish until they are either committed intentionally or explicitly excluded by the user.
+7.  **Desktop Release Smoke Test:** For Linux AppImage releases, require a startup smoke test in CI (`xvfb-run` + timeout) before uploading assets to GitHub Releases.
+8.  **Milestone Verification Gate:** Do not mark desktop-release milestones complete until both Linux artifacts (AppImage + raw binary) are built from the same commit and validated.
 
 ## 7. Repository & CI/CD (GitHub)
 
