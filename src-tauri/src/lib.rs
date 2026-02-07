@@ -310,34 +310,8 @@ fn stop_native_recording(_state: tauri::State<'_, RecorderState>) -> Result<Vec<
     Err("Native recording is not available on this platform.".to_string())
 }
 
-#[cfg(target_os = "linux")]
-fn configure_appimage_runtime_env() {
-    if std::env::var_os("APPIMAGE").is_none() {
-        return;
-    }
-
-    if std::env::var("GDK_BACKEND")
-        .ok()
-        .as_deref()
-        .is_some_and(|value| value == "x11")
-    {
-        std::env::set_var("GDK_BACKEND", "wayland,x11");
-    }
-
-    if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
-        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
-    }
-
-    if std::env::var_os("WEBKIT_DISABLE_COMPOSITING_MODE").is_none() {
-        std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
-    }
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    #[cfg(target_os = "linux")]
-    configure_appimage_runtime_env();
-
     tauri::Builder::default()
         .manage(RecorderState::default())
         .invoke_handler(tauri::generate_handler![

@@ -82,7 +82,6 @@ This document serves as the primary instruction set for AI agents and developers
 - **`src-tauri/`**: Tauri backend (Rust).
   - Contains `tauri.conf.json` for configuration.
   - Contains `Cargo.toml` for Rust dependencies.
-  - Keep the Linux AppImage runtime environment safeguards in `src-tauri/src/lib.rs` (AppImage startup compatibility).
   - Use `makepkg` (Arch) for final distribution.
 
 ## 5. Error Handling
@@ -94,6 +93,13 @@ This document serves as the primary instruction set for AI agents and developers
   console.error('[ServiceName] Error performing action:', err);
   ```
 
+### Tauri Desktop Networking Regression Guard ("Load failed")
+
+- **Mandatory CSP Rule:** Any frontend `fetch`/HTTP call used in Tauri desktop must be allowed in `src-tauri/tauri.conf.json` via `app.security.csp` `connect-src`.
+- **Endpoint Sync:** When adding/changing external APIs (example: `https://api.mistral.ai`), update `connect-src` in the same change-set.
+- **Verification Gate:** Before closing desktop audio/network changes, run `bun run dev:tauri` and validate the full flow: mic start -> stop -> transcription request.
+- **Failure Signature:** If UI shows `TypeError: Load failed`, check CSP `connect-src` first before changing audio logic.
+
 ## 6. Workflow Rules for Agents
 
 1.  **Read First:** Always read `package.json` and `README.md` to understand current context.
@@ -102,8 +108,7 @@ This document serves as the primary instruction set for AI agents and developers
 4.  **No Placeholders:** implementation should be complete. If a placeholder is strictly necessary, mark it with `TODO:`.
 5.  **Milestones Execution:** Upon start, read the `MILESTONES.md` file. Start working on the first unchecked milestone (`[ ]`). Once completed, update `MILESTONES.md` to mark it as checked (`[x]`).
 6.  **Release Branch Hygiene:** Before creating/pushing a release tag, run `git status --short`. If there are modified tracked source files (e.g. `src/**`, `src-tauri/**`), do not publish until they are either committed intentionally or explicitly excluded by the user.
-7.  **Desktop Release Smoke Test:** For Linux AppImage releases, require a startup smoke test in CI (`xvfb-run` + timeout) before uploading assets to GitHub Releases.
-8.  **Milestone Verification Gate:** Do not mark desktop-release milestones complete until both Linux artifacts (AppImage + raw binary) are built from the same commit and validated.
+7.  **Desktop Release Verification:** After a release build, verify that the Linux binary artifact is present and valid in GitHub Releases.
 
 ## 7. Repository & CI/CD (GitHub)
 

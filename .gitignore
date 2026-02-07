@@ -46,7 +46,6 @@ src-tauri/target/
 src-tauri/gen/
 
 # Packaged binaries and archives
-*.AppImage
 *.deb
 *.rpm
 *.snap

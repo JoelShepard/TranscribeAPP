@@ -1,7 +1,7 @@
 {
   "name": "transcribeapp",
   "productName": "TranscribeJS",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "description": "TranscribeJS transcription app",
   "author": "JoeShep",
   "type": "module",

@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "TranscribeJS",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "identifier": "com.joeshep.transcribejs",
   "build": {
     "frontendDist": "../dist",
@@ -21,7 +21,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data: filesystem: tauri:; media-src 'self' blob: data: filesystem: tauri:;"
+      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data: filesystem: tauri:; media-src 'self' blob: data: filesystem: tauri:; connect-src 'self' blob: data: tauri: https://api.mistral.ai"
     }
   },
   "bundle": {
