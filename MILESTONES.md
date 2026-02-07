@@ -15,4 +15,4 @@ Track important project goals here. Mark items as completed only when fully veri
 
 ## Next
 
-- [ ] Publish release artifacts (desktop builds) on GitHub Releases.
+- [x] Publish release artifacts (desktop builds) on GitHub Releases. I want a working AppImage and a binary file.
