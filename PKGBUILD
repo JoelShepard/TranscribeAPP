@@ -1,6 +1,6 @@
 # Maintainer: JoeShep
 pkgname=transcribejs
-pkgver=0.2.0
+pkgver=0.2.2
 pkgrel=1
 pkgdesc="TranscribeJS native Linux desktop app (Tauri)"
 arch=('x86_64')
