@@ -76,7 +76,7 @@ export default function App() {
   const [progress, setProgress] = useState('');
   const [transcription, setTranscription] = useState('');
   const [error, setError] = useState('');
-  const [tauriEnv, setTauriEnv] = useState(false);
+  const [tauriEnv, setTauriEnv] = useState(() => isTauriRuntime());
   const [linuxEnv, setLinuxEnv] = useState(false);
   
   // Recording refs
@@ -318,55 +318,87 @@ export default function App() {
   return (
     <div className={cn(
       "min-h-screen bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] transition-colors duration-200 relative overflow-x-hidden",
-      tauriEnv && "pt-10"
+      tauriEnv && "pt-8"
     )}>
-      <div className="pointer-events-none absolute -top-24 -left-20 h-72 w-72 rounded-full bg-[var(--md-sys-color-primary-container)]/60 blur-3xl" />
-      <div className="pointer-events-none absolute top-20 right-0 h-80 w-80 rounded-full bg-[var(--md-sys-color-secondary-container)]/50 blur-3xl" />
+      <div className="pointer-events-none absolute top-16 -left-10 h-56 w-56 rounded-full bg-[var(--md-sys-color-primary-container)]/20 blur-3xl" />
+      <div className="pointer-events-none absolute top-40 right-0 h-64 w-64 rounded-full bg-[var(--md-sys-color-secondary-container)]/15 blur-3xl" />
       <TitleBar />
       {/* Header */}
       <header className={cn(
-        "sticky top-0 z-10 transition-colors duration-200 pt-[env(safe-area-inset-top)]",
-        tauriEnv && "top-10"
+        "sticky z-10 transition-colors duration-200 mb-14",
+        tauriEnv ? "top-8" : "top-0 pt-[env(safe-area-inset-top)]"
       )}>
-        <div className="max-w-5xl mx-auto px-4 py-4">
-          <div className="flex justify-between items-center rounded-[28px] border border-[color:var(--md-sys-color-outline)]/30 bg-[var(--md-sys-color-surface-container)]/90 backdrop-blur-sm px-5 py-4 shadow-[0_6px_24px_rgba(22,27,45,0.10)] dark:shadow-[0_6px_24px_rgba(0,0,0,0.28)]">
-          <button 
-            onClick={() => {
-              setStatus('idle');
-              setTranscription('');
-              setError('');
-            }}
-            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-            aria-label="Go to Home"
-          >
-             <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-[var(--md-sys-color-on-primary)] bg-[var(--md-sys-color-primary)] shadow-[0_8px_18px_rgba(39,80,196,0.30)]">
-               <AudioLines className="w-5 h-5" />
-             </div>
-             <h1 className="text-xl font-extrabold tracking-tight text-[var(--md-sys-color-on-surface)]">TranscribeJS</h1>
-          </button>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={toggleTheme}
-              className="p-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] transition-colors text-[var(--md-sys-color-on-surface-variant)]"
-              aria-label="Toggle theme"
-            >
-              {theme === 'light' ? <Moon className="w-6 h-6" /> : <Sun className="w-6 h-6" />}
-            </button>
-            <button 
-              onClick={() => setShowSettings(!showSettings)}
-              className="p-2.5 rounded-2xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] hover:opacity-90 transition-colors"
-              aria-label="Settings"
-            >
-              <Settings className="w-6 h-6" />
-            </button>
-          </div>
-          </div>
+        <div className={cn("max-w-4xl mx-auto px-6", tauriEnv ? "py-2" : "py-4")}>
+          {(() => {
+            const logoContent = (
+              <button 
+                onClick={() => {
+                  setStatus('idle');
+                  setTranscription('');
+                  setError('');
+                }}
+                className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                aria-label="Go to Home"
+              >
+                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-[var(--md-sys-color-on-primary)] bg-[var(--md-sys-color-primary)] shadow-[0_8px_18px_rgba(39,80,196,0.30)]">
+                   <AudioLines className="w-5 h-5" />
+                 </div>
+                 <h1 className="text-xl font-extrabold tracking-tight text-[var(--md-sys-color-on-surface)]">TranscribeJS</h1>
+              </button>
+            );
+
+            const actionsContent = (
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={toggleTheme}
+                  className="p-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] transition-colors text-[var(--md-sys-color-on-surface-variant)]"
+                  aria-label="Toggle theme"
+                >
+                  {theme === 'light' ? <Moon className="w-6 h-6" /> : <Sun className="w-6 h-6" />}
+                </button>
+                <button 
+                  onClick={() => setShowSettings(!showSettings)}
+                  className="p-2.5 rounded-2xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] hover:opacity-90 transition-colors"
+                  aria-label="Settings"
+                >
+                  <Settings className="w-6 h-6" />
+                </button>
+              </div>
+            );
+
+            const pillClass = "rounded-[28px] border border-[color:var(--md-sys-color-outline)]/20 bg-[var(--md-sys-color-surface-container)]/90 backdrop-blur-sm px-5 shadow-[0_4px_16px_rgba(22,27,45,0.08)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.20)]";
+            const paddingClass = tauriEnv ? "py-2" : "py-4";
+
+            if (tauriEnv) {
+               return (
+                 <div className="flex justify-between items-center gap-4 w-full">
+                    <div className={cn(pillClass, paddingClass, "flex items-center flex-1")}>
+                      {logoContent}
+                    </div>
+                    <div className={cn(pillClass, paddingClass, "flex items-center")}>
+                      {actionsContent}
+                    </div>
+                 </div>
+               );
+            }
+
+            return (
+              <div className={cn(
+                "flex justify-between items-center",
+                pillClass,
+                paddingClass
+              )}>
+                {logoContent}
+                {actionsContent}
+              </div>
+            );
+          })()}
         </div>
       </header>
 
       {/* Settings Modal/Area */}
       {showSettings && (
-        <div className="mx-4 max-w-5xl md:mx-auto mb-2 rounded-[30px] border border-[color:var(--md-sys-color-outline)]/30 bg-[var(--md-sys-color-surface-container)] p-6 animate-in slide-in-from-top-2 shadow-[0_8px_28px_rgba(22,27,45,0.10)] dark:shadow-[0_8px_28px_rgba(0,0,0,0.25)]">
+        <div className="mx-6 max-w-4xl md:mx-auto mb-2 rounded-[30px] border border-[color:var(--md-sys-color-outline)]/30 bg-[var(--md-sys-color-surface-container)] p-6 animate-in slide-in-from-top-2 shadow-[0_8px_28px_rgba(22,27,45,0.10)] dark:shadow-[0_8px_28px_rgba(0,0,0,0.25)]">
             <div className="max-w-2xl mx-auto">
                 <label className="block text-base font-semibold text-[var(--md-sys-color-on-surface)] mb-2">Mistral API Key</label>
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -398,7 +430,7 @@ export default function App() {
         </div>
       )}
 
-      <main className="relative max-w-4xl mx-auto p-6 space-y-8">
+      <main className="relative max-w-4xl mx-auto px-6 pb-6 space-y-8">
         
         {/* Error Banner */}
         {error && (

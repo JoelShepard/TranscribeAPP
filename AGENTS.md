@@ -182,6 +182,14 @@ There are exactly **four** GitHub Actions workflows. Do not add or remove workfl
 - **Serve command:** Production uses `bun x serve dist -p 3000 --single`. The `--single` flag is required for SPA routing.
 - **Rule:** Do not add runtime dependencies to the slim image. If a new dependency is needed at runtime, it must be explicitly justified.
 
+### 6.10 Header Layout Integrity
+
+The application uses a custom sticky header that sits below the window title bar.
+
+- **Rule:** The header container in `src/App.tsx` must have at least `mb-14` (56px) or equivalent bottom margin.
+- **Reasoning:** In the desktop app, the header bar (containing the logo and settings) can visually collapse onto or touch the main action buttons ("Upload Audio" / "Record Voice") if the margin is too small, especially when window decorations are custom.
+- **Verification:** Visually verify that there is a clear gap between the header pill and the action cards in both web (`bun run dev`) and desktop (`bun run dev:tauri`) modes.
+
 ## 7. Workflow Rules for Agents
 
 1.  **Read First:** Always read `package.json` and `README.md` to understand current context.

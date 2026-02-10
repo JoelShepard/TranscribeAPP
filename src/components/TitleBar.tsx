@@ -43,12 +43,12 @@ export function TitleBar() {
 
   return (
     <div 
-      className="fixed top-0 left-0 right-0 h-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center z-50 select-none"
+      className="fixed top-0 left-0 right-0 h-8 bg-[var(--md-sys-color-surface)] border-b border-[color:var(--md-sys-color-outline)]/10 flex justify-between items-center z-50 select-none"
       onMouseDown={startDrag} // Explicit drag handler
     >
       {/* Title Area */}
       <div className="flex items-center px-4 h-full flex-1 gap-2 pointer-events-none">
-         <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+         <span className="text-sm font-medium text-[var(--md-sys-color-on-surface-variant)]">
            TranscribeJS
          </span>
       </div>
@@ -57,19 +57,19 @@ export function TitleBar() {
       <div className="flex h-full" onMouseDown={(e) => e.stopPropagation()}>
         <button
           onClick={handleMinimize}
-          className="h-full w-12 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors focus:outline-none cursor-default"
+          className="h-full w-11 flex items-center justify-center hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] transition-colors focus:outline-none cursor-default"
         >
           <Minus size={18} />
         </button>
         <button
           onClick={handleMaximize}
-          className="h-full w-12 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors focus:outline-none cursor-default"
+          className="h-full w-11 flex items-center justify-center hover:bg-[var(--md-sys-color-surface-container-high)] text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] transition-colors focus:outline-none cursor-default"
         >
           {isMaximized ? <Copy size={16} className="rotate-180" /> : <Square size={16} />}
         </button>
         <button
           onClick={handleClose}
-          className="h-full w-12 flex items-center justify-center hover:bg-red-500 hover:text-white text-gray-500 dark:text-gray-400 transition-colors focus:outline-none cursor-default"
+          className="h-full w-11 flex items-center justify-center hover:bg-red-500 hover:text-white text-[var(--md-sys-color-on-surface-variant)] transition-colors focus:outline-none cursor-default"
         >
           <X size={18} />
         </button>
