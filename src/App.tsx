@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, FileAudio, Settings, Save, Copy, Loader2, StopCircle, Sun, Moon, AudioLines } from 'lucide-react';
+import { Mic, FileAudio, Settings, Save, Copy, Loader2, StopCircle, Sun, Moon, AudioLines, ExternalLink } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { invoke } from '@tauri-apps/api/core';
@@ -317,79 +317,92 @@ export default function App() {
 
   return (
     <div className={cn(
-      "min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans transition-colors duration-200",
+      "min-h-screen bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] transition-colors duration-200 relative overflow-x-hidden",
       tauriEnv && "pt-10"
     )}>
+      <div className="pointer-events-none absolute -top-24 -left-20 h-72 w-72 rounded-full bg-[var(--md-sys-color-primary-container)]/60 blur-3xl" />
+      <div className="pointer-events-none absolute top-20 right-0 h-80 w-80 rounded-full bg-[var(--md-sys-color-secondary-container)]/50 blur-3xl" />
       <TitleBar />
       {/* Header */}
       <header className={cn(
-        "bg-white dark:bg-gray-900 shadow-sm dark:border-b dark:border-gray-800 sticky top-0 z-10 transition-colors duration-200 pt-[env(safe-area-inset-top)]",
+        "sticky top-0 z-10 transition-colors duration-200 pt-[env(safe-area-inset-top)]",
         tauriEnv && "top-10"
       )}>
-        <div className="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="max-w-5xl mx-auto px-4 py-4">
+          <div className="flex justify-between items-center rounded-[28px] border border-[color:var(--md-sys-color-outline)]/30 bg-[var(--md-sys-color-surface-container)]/90 backdrop-blur-sm px-5 py-4 shadow-[0_6px_24px_rgba(22,27,45,0.10)] dark:shadow-[0_6px_24px_rgba(0,0,0,0.28)]">
           <button 
             onClick={() => {
               setStatus('idle');
               setTranscription('');
               setError('');
             }}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
             aria-label="Go to Home"
           >
-             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-md shadow-blue-200 dark:shadow-none">
+             <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-[var(--md-sys-color-on-primary)] bg-[var(--md-sys-color-primary)] shadow-[0_8px_18px_rgba(39,80,196,0.30)]">
                <AudioLines className="w-5 h-5" />
              </div>
-             <h1 className="text-xl font-bold text-gray-800 dark:text-white tracking-tight">TranscribeJS</h1>
+             <h1 className="text-xl font-extrabold tracking-tight text-[var(--md-sys-color-on-surface)]">TranscribeJS</h1>
           </button>
           <div className="flex items-center gap-2">
             <button 
               onClick={toggleTheme}
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-300"
+              className="p-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] transition-colors text-[var(--md-sys-color-on-surface-variant)]"
               aria-label="Toggle theme"
             >
               {theme === 'light' ? <Moon className="w-6 h-6" /> : <Sun className="w-6 h-6" />}
             </button>
             <button 
               onClick={() => setShowSettings(!showSettings)}
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-2.5 rounded-2xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] hover:opacity-90 transition-colors"
               aria-label="Settings"
             >
-              <Settings className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+              <Settings className="w-6 h-6" />
             </button>
+          </div>
           </div>
         </div>
       </header>
 
       {/* Settings Modal/Area */}
       {showSettings && (
-        <div className="bg-blue-50 dark:bg-gray-800 border-b border-blue-100 dark:border-gray-700 p-6 animate-in slide-in-from-top-2">
+        <div className="mx-4 max-w-5xl md:mx-auto mb-2 rounded-[30px] border border-[color:var(--md-sys-color-outline)]/30 bg-[var(--md-sys-color-surface-container)] p-6 animate-in slide-in-from-top-2 shadow-[0_8px_28px_rgba(22,27,45,0.10)] dark:shadow-[0_8px_28px_rgba(0,0,0,0.25)]">
             <div className="max-w-2xl mx-auto">
-                <label className="block text-sm font-medium text-blue-900 dark:text-blue-300 mb-2">Mistral API Key</label>
-                <div className="flex gap-2">
+                <label className="block text-base font-semibold text-[var(--md-sys-color-on-surface)] mb-2">Mistral API Key</label>
+                <div className="flex flex-col sm:flex-row gap-3">
                     <input 
                         type="password" 
                         value={apiKey}
                         onChange={(e) => setApiKey(e.target.value)}
                         placeholder="Enter your API Key"
-                        className="flex-1 p-3 rounded-lg border border-blue-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="flex-1 p-3.5 rounded-2xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/50 outline-none"
                     />
                     <button 
                         onClick={saveApiKey}
-                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
+                        className="bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] px-7 py-3 rounded-2xl hover:opacity-90 font-bold"
                     >
                         Save
                     </button>
                 </div>
-                <p className="text-xs text-blue-700 dark:text-blue-400 mt-2">Key is stored locally on your device.</p>
+                <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-3">Key is stored locally on your device.</p>
+                <a
+                  href="https://console.mistral.ai/api-keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-[var(--md-sys-color-primary)] underline underline-offset-2 hover:opacity-85"
+                >
+                  Create a new API key on Mistral
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
             </div>
         </div>
       )}
 
-      <main className="max-w-3xl mx-auto p-6 space-y-8">
+      <main className="relative max-w-4xl mx-auto p-6 space-y-8">
         
         {/* Error Banner */}
         {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 p-4 rounded-lg border border-red-200 dark:border-red-800 flex items-center gap-2">
+            <div className="bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] p-4 rounded-2xl border border-red-300/40 flex items-center gap-2 shadow-sm">
                 <span className="font-bold">Error:</span> {error}
             </div>
         )}
@@ -398,40 +411,40 @@ export default function App() {
         {status === 'idle' || status === 'error' ? (
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Upload */}
-                <label className="group bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-sm border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all cursor-pointer flex flex-col items-center justify-center h-64">
+                <label className="group bg-[var(--md-sys-color-surface-container)] p-8 rounded-[28px] shadow-[0_4px_18px_rgba(27,34,57,0.10)] border border-[color:var(--md-sys-color-outline)]/30 hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(39,80,196,0.22)] transition-all cursor-pointer flex flex-col items-center justify-center h-64">
                     <input type="file" accept="audio/*" onChange={handleFileUpload} className="hidden" />
-                    <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <div className="w-16 h-16 bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] rounded-3xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                         <FileAudio className="w-8 h-8" />
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Upload Audio</h3>
-                    <p className="text-gray-500 dark:text-gray-400 text-center mt-2 text-sm">MP3, WAV, M4A, OGG</p>
+                    <h3 className="text-xl font-extrabold text-[var(--md-sys-color-on-surface)]">Upload Audio</h3>
+                    <p className="text-[var(--md-sys-color-on-surface-variant)] text-center mt-2 text-sm">MP3, WAV, M4A, OGG</p>
                 </label>
 
                 {/* Record */}
                 <button 
                     onClick={startRecording}
-                    className="group bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-sm border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-red-500 dark:hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all cursor-pointer flex flex-col items-center justify-center h-64"
+                    className="group bg-[var(--md-sys-color-surface-container)] p-8 rounded-[28px] shadow-[0_4px_18px_rgba(27,34,57,0.10)] border border-[color:var(--md-sys-color-outline)]/30 hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(176,54,74,0.24)] transition-all cursor-pointer flex flex-col items-center justify-center h-64"
                 >
-                    <div className="w-16 h-16 bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <div className="w-16 h-16 bg-rose-200/80 dark:bg-rose-900/45 text-rose-700 dark:text-rose-300 rounded-3xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                         <Mic className="w-8 h-8" />
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Record Voice</h3>
-                    <p className="text-gray-500 dark:text-gray-400 text-center mt-2 text-sm">Tap to start recording</p>
+                    <h3 className="text-xl font-extrabold text-[var(--md-sys-color-on-surface)]">Record Voice</h3>
+                    <p className="text-[var(--md-sys-color-on-surface-variant)] text-center mt-2 text-sm">Tap to start recording</p>
                 </button>
              </div>
         ) : null}
 
         {/* Recording State */}
         {status === 'recording' && (
-            <div className="flex flex-col items-center justify-center py-12 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-red-100 dark:border-red-900 animate-pulse">
-                <div className="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-red-200 dark:shadow-none">
+            <div className="flex flex-col items-center justify-center py-12 bg-[var(--md-sys-color-surface-container)] rounded-[32px] shadow-[0_8px_24px_rgba(60,20,31,0.18)] border border-rose-300/30 animate-pulse">
+                <div className="w-20 h-20 bg-rose-600 rounded-[24px] flex items-center justify-center mb-6 shadow-lg shadow-rose-300/40 dark:shadow-none">
                     <Mic className="w-10 h-10 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">Recording...</h2>
-                <p className="text-gray-500 dark:text-gray-400 mb-8">Speak clearly into the microphone</p>
+                <h2 className="text-2xl font-extrabold text-[var(--md-sys-color-on-surface)] mb-2">Recording...</h2>
+                <p className="text-[var(--md-sys-color-on-surface-variant)] mb-8">Speak clearly into the microphone</p>
                 <button 
                     onClick={stopRecording}
-                    className="bg-red-600 text-white px-8 py-3 rounded-full font-bold hover:bg-red-700 flex items-center gap-2 shadow-md transition-all hover:scale-105"
+                    className="bg-rose-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-rose-700 flex items-center gap-2 shadow-md transition-all hover:scale-105"
                 >
                     <StopCircle className="w-5 h-5" /> Stop Recording
                 </button>
@@ -440,38 +453,38 @@ export default function App() {
 
         {/* Processing State */}
         {(status === 'processing' || status === 'transcribing') && (
-            <div className="flex flex-col items-center justify-center py-12">
-                <Loader2 className="w-12 h-12 text-blue-600 dark:text-blue-400 animate-spin mb-6" />
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">Processing Audio</h2>
-                <p className="text-gray-500 dark:text-gray-400 text-lg">{progress}</p>
+            <div className="flex flex-col items-center justify-center py-12 bg-[var(--md-sys-color-surface-container)] rounded-[32px] border border-[color:var(--md-sys-color-outline)]/30 shadow-[0_8px_24px_rgba(39,80,196,0.14)]">
+                <Loader2 className="w-12 h-12 text-[var(--md-sys-color-primary)] animate-spin mb-6" />
+                <h2 className="text-2xl font-extrabold text-[var(--md-sys-color-on-surface)] mb-2">Processing Audio</h2>
+                <p className="text-[var(--md-sys-color-on-surface-variant)] text-lg">{progress}</p>
             </div>
         )}
 
         {/* Result State */}
         {status === 'done' && (
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div className="bg-gray-50 dark:bg-gray-900/50 px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <h3 className="font-semibold text-gray-700 dark:text-gray-200">Transcription Result</h3>
+            <div className="bg-[var(--md-sys-color-surface-container)] rounded-[30px] shadow-[0_8px_24px_rgba(27,34,57,0.10)] border border-[color:var(--md-sys-color-outline)]/30 overflow-hidden">
+                <div className="bg-[var(--md-sys-color-surface-container-high)] px-6 py-4 border-b border-[color:var(--md-sys-color-outline)]/30 flex justify-between items-center">
+                    <h3 className="font-bold text-[var(--md-sys-color-on-surface)]">Transcription Result</h3>
                     <div className="flex gap-2">
-                        <button onClick={copyToClipboard} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300" title="Copy">
+                        <button onClick={copyToClipboard} className="p-2.5 hover:bg-[var(--md-sys-color-surface-container-highest)] rounded-xl text-[var(--md-sys-color-on-surface-variant)]" title="Copy">
                             <Copy className="w-5 h-5" />
                         </button>
-                        <button onClick={downloadText} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-600 dark:text-gray-300" title="Save">
+                        <button onClick={downloadText} className="p-2.5 hover:bg-[var(--md-sys-color-surface-container-highest)] rounded-xl text-[var(--md-sys-color-on-surface-variant)]" title="Save">
                             <Save className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
                 <div className="p-6">
                     <textarea 
-                        className="w-full h-96 p-4 text-gray-800 dark:text-gray-200 bg-transparent leading-relaxed outline-none resize-none"
+                        className="w-full h-96 p-4 rounded-2xl text-[var(--md-sys-color-on-surface)] bg-[var(--md-sys-color-surface)] leading-relaxed outline-none resize-none border border-[color:var(--md-sys-color-outline)]/20"
                         value={transcription}
                         onChange={(e) => setTranscription(e.target.value)}
                     />
                 </div>
-                <div className="bg-gray-50 dark:bg-gray-900/50 px-6 py-4 border-t border-gray-200 dark:border-gray-700 text-center">
+                <div className="bg-[var(--md-sys-color-surface-container-high)] px-6 py-4 border-t border-[color:var(--md-sys-color-outline)]/30 text-center">
                     <button 
                         onClick={() => setStatus('idle')}
-                        className="text-blue-600 dark:text-blue-400 font-medium hover:text-blue-800 dark:hover:text-blue-300"
+                        className="text-[var(--md-sys-color-primary)] font-bold hover:opacity-80"
                     >
                         Transcribe Another File
                     </button>

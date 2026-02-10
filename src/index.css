@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700;800&display=swap");
 
 @source "./**/*.{ts,tsx,html}";
 
@@ -7,4 +8,44 @@
 @theme {
   --color-primary: #3b82f6;
   --color-secondary: #10b981;
+}
+
+:root {
+  --md-sys-color-primary: #2750c4;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #dbe1ff;
+  --md-sys-color-on-primary-container: #001452;
+  --md-sys-color-secondary-container: #dfe2f9;
+  --md-sys-color-on-secondary-container: #151b35;
+  --md-sys-color-surface: #f7f8ff;
+  --md-sys-color-surface-container: #eceffd;
+  --md-sys-color-surface-container-high: #e5e8f7;
+  --md-sys-color-surface-container-highest: #dde0ef;
+  --md-sys-color-on-surface: #1a1c23;
+  --md-sys-color-on-surface-variant: #444857;
+  --md-sys-color-outline: #74798b;
+  --md-sys-color-error-container: #ffdad6;
+  --md-sys-color-on-error-container: #410002;
+}
+
+.dark {
+  --md-sys-color-primary: #b8c5ff;
+  --md-sys-color-on-primary: #002986;
+  --md-sys-color-primary-container: #1239ab;
+  --md-sys-color-on-primary-container: #dde1ff;
+  --md-sys-color-secondary-container: #3d4160;
+  --md-sys-color-on-secondary-container: #dde1ff;
+  --md-sys-color-surface: #11131b;
+  --md-sys-color-surface-container: #1a1d27;
+  --md-sys-color-surface-container-high: #222533;
+  --md-sys-color-surface-container-highest: #2c3040;
+  --md-sys-color-on-surface: #e2e2ec;
+  --md-sys-color-on-surface-variant: #c4c6d6;
+  --md-sys-color-outline: #8d91a3;
+  --md-sys-color-error-container: #93000a;
+  --md-sys-color-on-error-container: #ffdad6;
+}
+
+body {
+  font-family: "Nunito Sans", "Segoe UI", sans-serif;
 }
