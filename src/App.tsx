@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, FileAudio, Settings, Save, Copy, Loader2, StopCircle, Sun, Moon, AudioLines, ExternalLink, History, X, Trash2 } from 'lucide-react';
+import { Mic, FileAudio, Settings, Save, Copy, Check, Loader2, StopCircle, Sun, Moon, AudioLines, ExternalLink, History, X, Trash2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { invoke } from '@tauri-apps/api/core';
@@ -9,6 +9,11 @@ import { useTheme } from './context/ThemeContext';
 import { useHistory } from './context/HistoryContext';
 import { TitleBar } from './components/TitleBar';
 import { isTauriRuntime } from './utils/platform';
+import {
+  ERROR_MESSAGES,
+  formatMicrophoneAccessError,
+  formatNativeMicrophoneError,
+} from './constants/messages';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -48,22 +53,22 @@ function getRecordingErrorMessage(
 
   if (name === 'NotAllowedError' || message?.toLowerCase().includes('permission denied')) {
     if (isLinuxTauri) {
-      return 'Browser-level microphone access failed on Linux Tauri. Native recorder should be used automatically; try recording again.';
+      return ERROR_MESSAGES.tauriLinuxPermissionDenied;
     }
 
-    return 'Microphone permission denied. Enable microphone access for this app in system/browser settings and try again.';
+    return ERROR_MESSAGES.microphonePermissionDenied;
   }
   if (name === 'NotFoundError') {
-    return 'No microphone detected. Connect a microphone and try again.';
+    return ERROR_MESSAGES.noMicrophoneDetected;
   }
   if (name === 'NotReadableError') {
-    return 'Microphone is busy or unavailable. Close other apps using it and try again.';
+    return ERROR_MESSAGES.microphoneBusy;
   }
   if (name === 'SecurityError') {
-    return 'Recording requires a secure context. Start the app with `bun run dev` or `bun run dev:tauri`.';
+    return ERROR_MESSAGES.secureContextRequired;
   }
 
-  return `Microphone access error: ${name || 'Unknown'} (${message || 'No details'})`;
+  return formatMicrophoneAccessError(name || ERROR_MESSAGES.unknownError, message || ERROR_MESSAGES.noErrorDetails);
 }
 
 function getErrorDetails(err: unknown): string {
@@ -80,11 +85,11 @@ function getErrorDetails(err: unknown): string {
     try {
       return JSON.stringify(err);
     } catch {
-      return 'Unknown error';
+      return ERROR_MESSAGES.unknownError;
     }
   }
 
-  return 'Unknown error';
+  return ERROR_MESSAGES.unknownError;
 }
 
 export default function App() {
@@ -103,6 +108,7 @@ export default function App() {
   const [tauriEnv, setTauriEnv] = useState(() => isTauriRuntime());
   const [linuxEnv, setLinuxEnv] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   
   // Recording refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -110,6 +116,7 @@ export default function App() {
   const mediaMimeTypeRef = useRef('audio/webm');
   const chunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setTauriEnv(isTauriRuntime());
@@ -166,7 +173,7 @@ export default function App() {
     }
 
     if (!file.type.startsWith('audio/')) {
-      setError('Please drop a valid audio file.');
+      setError(ERROR_MESSAGES.invalidAudioFile);
       setStatus('error');
       return;
     }
@@ -185,20 +192,20 @@ export default function App() {
         setStatus('recording');
       } catch (err: unknown) {
         console.error('[App] Error starting native recording:', err);
-        setError(`Native microphone error: ${getErrorDetails(err)}`);
+        setError(formatNativeMicrophoneError(getErrorDetails(err)));
         setStatus('error');
       }
       return;
     }
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      setError('Recording is not supported in this environment. Use Upload Audio as fallback.');
+      setError(ERROR_MESSAGES.recordingNotSupported);
       setStatus('error');
       return;
     }
 
     if (typeof MediaRecorder === 'undefined') {
-      setError('MediaRecorder is not available in this environment. Use Upload Audio as fallback.');
+      setError(ERROR_MESSAGES.mediaRecorderNotAvailable);
       setStatus('error');
       return;
     }
@@ -267,7 +274,7 @@ export default function App() {
         await processAudio(file, 'recording');
       } catch (err: unknown) {
         console.error('[App] Error stopping native recording:', err);
-        setError(`Native microphone error: ${getErrorDetails(err)}`);
+        setError(formatNativeMicrophoneError(getErrorDetails(err)));
         setProgress('');
         setStatus('error');
       }
@@ -281,6 +288,10 @@ export default function App() {
 
   useEffect(() => {
     return () => {
+      if (copyFeedbackTimeoutRef.current) {
+        clearTimeout(copyFeedbackTimeoutRef.current);
+      }
+
       mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
       mediaStreamRef.current = null;
 
@@ -297,7 +308,7 @@ export default function App() {
     
     if (!apiKey) {
       console.error('[App] No API key set');
-      setError('Please set your Mistral API Key first.');
+      setError(ERROR_MESSAGES.missingApiKey);
       setShowSettings(true);
       return;
     }
@@ -379,11 +390,11 @@ export default function App() {
       console.error('[App] Error during processing:', err);
       console.error('[App] Error stack:', err.stack);
       
-      let errorMessage = err.message || 'An error occurred during processing';
+      let errorMessage = err.message || ERROR_MESSAGES.processingFailed;
       
       // Handle specifically 401 Unauthorized
       if (errorMessage.includes('401') || errorMessage.toLowerCase().includes('unauthorized')) {
-        errorMessage = 'Invalid API Key. Please check your Mistral API Key in settings.';
+        errorMessage = ERROR_MESSAGES.invalidApiKey;
         setShowSettings(true); // Auto-open settings
       }
 
@@ -392,9 +403,22 @@ export default function App() {
     }
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(transcription);
-    alert('Copied to clipboard!');
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(transcription);
+      setIsCopied(true);
+
+      if (copyFeedbackTimeoutRef.current) {
+        clearTimeout(copyFeedbackTimeoutRef.current);
+      }
+
+      copyFeedbackTimeoutRef.current = setTimeout(() => {
+        setIsCopied(false);
+      }, 1500);
+    } catch (err: unknown) {
+      console.error('[App] Error copying transcription to clipboard:', err);
+      setError(ERROR_MESSAGES.clipboardCopyFailed);
+    }
   };
 
   const downloadText = () => {
@@ -811,8 +835,18 @@ export default function App() {
                 <div className="bg-[var(--md-sys-color-surface-container-high)] px-6 py-4 border-b border-[color:var(--md-sys-color-outline)]/30 flex justify-between items-center">
                     <h3 className="font-bold text-[var(--md-sys-color-on-surface)]">Transcription Result</h3>
                     <div className="flex gap-2">
-                        <button onClick={copyToClipboard} className="p-2.5 hover:bg-[var(--md-sys-color-surface-container-highest)] rounded-xl text-[var(--md-sys-color-on-surface-variant)]" title="Copy">
-                            <Copy className="w-5 h-5" />
+                        <button
+                          onClick={copyToClipboard}
+                          className={cn(
+                            'p-2.5 hover:bg-[var(--md-sys-color-surface-container-highest)] rounded-xl transition-colors',
+                            isCopied
+                              ? 'text-[var(--md-sys-color-primary)]'
+                              : 'text-[var(--md-sys-color-on-surface-variant)]'
+                          )}
+                          title={isCopied ? 'Copied' : 'Copy'}
+                          aria-label={isCopied ? 'Copied to clipboard' : 'Copy to clipboard'}
+                        >
+                            {isCopied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                         </button>
                         <button onClick={downloadText} className="p-2.5 hover:bg-[var(--md-sys-color-surface-container-highest)] rounded-xl text-[var(--md-sys-color-on-surface-variant)]" title="Save">
                             <Save className="w-5 h-5" />

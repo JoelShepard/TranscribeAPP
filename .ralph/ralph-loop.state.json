@@ -1,13 +1,13 @@
 {
   "active": true,
-  "iteration": 4,
-  "minIterations": 5,
+  "iteration": 1,
+  "minIterations": 15,
   "maxIterations": 0,
   "completionPromise": "COMPLETE",
   "tasksMode": false,
   "taskPromise": "READY_FOR_NEXT_TASK",
   "prompt": "Considera il file Milestones. Devi risolvere un task per volta e terminare la tua esecuzione",
-  "startedAt": "2026-02-11T22:41:23.615Z",
+  "startedAt": "2026-02-11T22:47:23.528Z",
   "model": "openai/gpt-5.3-codex",
   "agent": "opencode"
 }

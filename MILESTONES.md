@@ -30,8 +30,8 @@ Track important project goals here. Mark items as completed only when fully veri
 - [x] **Settings**: Add source language input field (optional) for Mistral API.
 - [x] **UX**: Implement `Ctrl+Enter` shortcut to save settings.
 - [x] **UX**: Implement `Esc` shortcut to close the Settings modal.
-- [ ] **UX**: Add visual feedback (checkmark) to the "Copy" button when clicked.
-- [ ] **Refactor**: Extract hardcoded error messages to `src/constants/messages.ts`.
+- [x] **UX**: Add visual feedback (checkmark) to the "Copy" button when clicked.
+- [x] **Refactor**: Extract hardcoded error messages to `src/constants/messages.ts`.
 - [ ] **Refactor**: Move TypeScript interfaces from `App.tsx` to `src/types/index.ts`.
 - [ ] **CI**: Add a linting script to `package.json` and a CI step for `bun run lint`.
 - [ ] **Docs**: Update `README.md` with new screenshots and "How to use" section.

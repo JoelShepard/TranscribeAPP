@@ -2,66 +2,21 @@
   "iterations": [
     {
       "iteration": 1,
-      "startedAt": "2026-02-11T22:41:23.903Z",
-      "endedAt": "2026-02-11T22:42:36.562Z",
-      "durationMs": 72377,
+      "startedAt": "2026-02-11T22:47:23.819Z",
+      "endedAt": "2026-02-11T22:48:39.733Z",
+      "durationMs": 75633,
       "toolsUsed": {},
       "filesModified": [
         "MILESTONES.md",
         "src/App.tsx",
-        "src/services/mistral/MistralClient.test.ts",
-        "src/services/mistral/MistralClient.ts"
-      ],
-      "exitCode": 0,
-      "completionDetected": true,
-      "errors": []
-    },
-    {
-      "iteration": 2,
-      "startedAt": "2026-02-11T22:42:37.884Z",
-      "endedAt": "2026-02-11T22:43:39.475Z",
-      "durationMs": 61319,
-      "toolsUsed": {},
-      "filesModified": [
-        "MILESTONES.md",
-        "src/App.tsx",
-        "src/services/mistral/MistralClient.test.ts",
-        "src/services/mistral/MistralClient.ts"
-      ],
-      "exitCode": 0,
-      "completionDetected": true,
-      "errors": []
-    },
-    {
-      "iteration": 3,
-      "startedAt": "2026-02-11T22:43:40.792Z",
-      "endedAt": "2026-02-11T22:44:29.874Z",
-      "durationMs": 48804,
-      "toolsUsed": {},
-      "filesModified": [
-        "MILESTONES.md",
-        "src/App.tsx"
-      ],
-      "exitCode": 0,
-      "completionDetected": true,
-      "errors": []
-    },
-    {
-      "iteration": 4,
-      "startedAt": "2026-02-11T22:44:31.189Z",
-      "endedAt": "2026-02-11T22:45:08.375Z",
-      "durationMs": 36912,
-      "toolsUsed": {},
-      "filesModified": [
-        "MILESTONES.md",
-        "src/App.tsx"
+        "src/constants/"
       ],
       "exitCode": 0,
       "completionDetected": true,
       "errors": []
     }
   ],
-  "totalDurationMs": 219412,
+  "totalDurationMs": 75633,
   "struggleIndicators": {
     "repeatedErrors": {},
     "noProgressIterations": 0,
