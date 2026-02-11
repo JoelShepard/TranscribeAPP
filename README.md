@@ -37,16 +37,16 @@ TranscribeJS is an audio transcription app powered by Mistral AI, built with Rea
 
 ## Commands
 
-| Action | Command | Description |
-| :--- | :--- | :--- |
-| **Install** | `bun install` | Install dependencies. |
-| **Dev (Web)** | `bun run dev` | Start web dev server with hot reload. |
-| **Build (Web)** | `bun run build` | Build web assets into `dist/`. |
-| **Dev (Tauri)** | `bun run dev:tauri` | Start Tauri dev environment. |
-| **Build (Tauri)** | `bun run build:tauri` | Build Linux native Tauri app. |
-| **Android Sync** | `bun run cap:sync` | Build web assets and sync Android project. |
-| **Android Dev** | `bun run cap:android` | Sync and open Android Studio project. |
-| **Tests** | `bun test` | Run Bun test suite. |
+| Action            | Command               | Description                                |
+| :---------------- | :-------------------- | :----------------------------------------- |
+| **Install**       | `bun install`         | Install dependencies.                      |
+| **Dev (Web)**     | `bun run dev`         | Start web dev server with hot reload.      |
+| **Build (Web)**   | `bun run build`       | Build web assets into `dist/`.             |
+| **Dev (Tauri)**   | `bun run dev:tauri`   | Start Tauri dev environment.               |
+| **Build (Tauri)** | `bun run build:tauri` | Build Linux native Tauri app.              |
+| **Android Sync**  | `bun run cap:sync`    | Build web assets and sync Android project. |
+| **Android Dev**   | `bun run cap:android` | Sync and open Android Studio project.      |
+| **Tests**         | `bun test`            | Run Bun test suite.                        |
 
 ## Docker Web App
 

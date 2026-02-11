@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 type ErrorBoundaryProps = {
   children: React.ReactNode;
@@ -8,7 +8,10 @@ type ErrorBoundaryState = {
   hasError: boolean;
 };
 
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends React.Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   override state: ErrorBoundaryState = {
     hasError: false,
   };
@@ -18,7 +21,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   override componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    console.error('[ErrorBoundary] Unhandled React error:', error, errorInfo);
+    console.error("[ErrorBoundary] Unhandled React error:", error, errorInfo);
   }
 
   private handleReload = (): void => {
@@ -30,7 +33,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       return (
         <div className="min-h-screen bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] flex items-center justify-center px-6">
           <div className="w-full max-w-lg rounded-[30px] border border-[color:var(--md-sys-color-outline)]/35 bg-[var(--md-sys-color-surface-container)] p-8 shadow-[0_10px_28px_rgba(22,27,45,0.12)] text-center">
-            <h1 className="text-2xl font-extrabold tracking-tight">Something went wrong</h1>
+            <h1 className="text-2xl font-extrabold tracking-tight">
+              Something went wrong
+            </h1>
             <p className="mt-3 text-sm text-[var(--md-sys-color-on-surface-variant)]">
               An unexpected UI error occurred. Reload the app to recover.
             </p>

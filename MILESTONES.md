@@ -14,35 +14,52 @@ Track important project goals here. Mark items as completed only when fully veri
 - [x] Repository cleaned to supported targets only (Android, Linux Tauri, Docker web app).
 - [x] Publish release artifacts (desktop binary) on GitHub Releases.
 
-## Next
+## New Roadmap
 
-- [x] **Tests**: Create `src/services/audio/AudioProcessor.test.ts` and scaffold tests for `getAudioDuration`.
-- [x] **Tests**: Implement unit tests for `splitAudio` logic in `AudioProcessor`.
-- [x] **Tests**: Implement unit tests for `normalizeAudio` in `AudioProcessor`.
-- [x] **Tests**: Create `src/services/mistral/MistralClient.test.ts` with mocked fetch calls.
-- [x] **UI**: Add "Drag & Drop" zone to the file upload area in `App.tsx`.
-- [x] **UI**: Add a CSS-based audio visualizer (bars or wave) during recording state.
-- [x] **Feature**: Implement `HistoryContext` to store transcription metadata in `localStorage`.
-- [x] **Feature**: Create a "History" sidebar/modal to list past transcriptions.
-- [x] **Feature**: Add "Export to Markdown" button in the result view.
-- [x] **Feature**: Add "Export to JSON" button (including metadata like date, duration).
-- [x] **Settings**: Add model selection dropdown (e.g., `mistral-tiny`, `mistral-small`) to Settings.
-- [x] **Settings**: Add source language input field (optional) for Mistral API.
-- [x] **UX**: Implement `Ctrl+Enter` shortcut to save settings.
-- [x] **UX**: Implement `Esc` shortcut to close the Settings modal.
-- [x] **UX**: Add visual feedback (checkmark) to the "Copy" button when clicked.
-- [x] **Refactor**: Extract hardcoded error messages to `src/constants/messages.ts`.
-- [x] **Refactor**: Move TypeScript interfaces from `App.tsx` to `src/types/index.ts`.
-- [x] **CI**: Add a linting script to `package.json` and a CI step for `bun run lint`.
-- [x] **Docs**: Update `README.md` with new screenshots and "How to use" section.
-- [x] **Docs**: Create `CONTRIBUTING.md` with development guidelines.
-- [x] **Android**: Verify and update adaptive icons for Android build.
-- [x] **Android**: Create a branded splash screen for the Android app.
-- [x] **Tauri**: Customize the native window menu (File, Edit, View) or hide it if unnecessary.
-- [x] **Tauri**: Implement a basic system tray icon using Tauri API.
-- [x] **Performance**: Optimize `App.tsx` with `useMemo` for expensive renders.
-- [x] **Error Handling**: implementation of a global React Error Boundary.
-- [x] **Audio**: explicitly test and list supported formats (WAV, MP3, M4A, OGG) in the UI.
-- [x] **Analytics**: Add a simple local counter for "Total Files Transcribed".
-- [x] **Cleanup**: Audit and remove unused imports across `src/`.
-- [ ] **Cleanup**: Run a full project formatting pass.
+### 1) Transcription Intelligence
+
+- [ ] **Feature**: Add optional word/sentence timestamps to transcript output and exports.
+- [ ] **Feature**: Add speaker diarization support (Speaker 1, Speaker 2) with editable labels.
+- [ ] **Feature**: Add confidence scoring and highlight low-confidence transcript segments.
+- [ ] **Feature**: Add automatic language detection with manual override fallback.
+- [ ] **Feature**: Add post-transcription translation mode (source -> target language).
+
+### 2) Editing and Export Workflow
+
+- [ ] **Editor**: Create an in-app transcript editor with undo/redo and autosave.
+- [ ] **Editor**: Add search/replace and quick navigation across long transcripts.
+- [ ] **Export**: Add subtitle exports (`.srt` and `.vtt`) with configurable line length/timing.
+- [ ] **Export**: Add import/export of full project bundles (audio + transcript + metadata).
+- [ ] **UX**: Add transcript sections/chapters and one-click copy per section.
+
+### 3) Audio Processing and Recording
+
+- [ ] **Audio**: Add optional noise reduction and level normalization pre-processing.
+- [ ] **Audio**: Add silence trimming and "remove filler pauses" options.
+- [ ] **Recording**: Add pause/resume during recording for both web and Tauri Linux paths.
+- [ ] **Recording**: Add recording quality presets (low/medium/high) with bitrate visibility.
+- [ ] **Queue**: Add batch transcription queue for multiple uploaded files.
+
+### 4) History, Search, and Data Management
+
+- [ ] **History**: Add tags, favorites, and folders to organize transcript history.
+- [ ] **History**: Add full-text search across past transcripts with filters by date/model/language.
+- [ ] **Data**: Add retention policy settings (auto-delete old items after N days).
+- [ ] **Data**: Add secure export/backup and restore flow for local history.
+- [ ] **Data**: Add optional encrypted local storage mode for API key and saved transcripts.
+
+### 5) Platform and Product Expansion
+
+- [ ] **Desktop**: Add system-level global shortcut to start/stop recording in Tauri app.
+- [ ] **Mobile**: Improve Android recording UX with background-safe interruption handling.
+- [ ] **Web**: Add PWA installability with offline-safe UI shell and retry queue.
+- [ ] **Accessibility**: Complete keyboard navigation and screen reader audit for all main flows.
+- [ ] **Localization**: Introduce i18n framework and ship Italian + English UI locales.
+
+### 6) Reliability, Quality, and Developer Experience
+
+- [ ] **Tests**: Expand test coverage for `App.tsx` critical flows (upload, record, error states).
+- [ ] **Tests**: Add integration tests for transcription request lifecycle and cancellation.
+- [ ] **Performance**: Add benchmark suite for audio split/normalize steps with regression thresholds.
+- [ ] **Observability**: Add user-visible diagnostics panel with logs and exportable debug report.
+- [ ] **Release**: Automate pre-release validation script (version sync, build, tests, artifact checks).

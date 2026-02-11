@@ -18,7 +18,7 @@ export class AudioProcessor {
     return new Promise((resolve, reject) => {
       const url = URL.createObjectURL(file);
       const audio = new Audio();
-      audio.preload = 'metadata';
+      audio.preload = "metadata";
       audio.src = url;
 
       const cleanup = () => {
@@ -29,7 +29,7 @@ export class AudioProcessor {
         const duration = audio.duration;
         cleanup();
         if (!Number.isFinite(duration) || duration <= 0) {
-          reject(new Error('Unable to read audio duration.'));
+          reject(new Error("Unable to read audio duration."));
           return;
         }
         resolve({ duration });
@@ -37,7 +37,7 @@ export class AudioProcessor {
 
       audio.onerror = () => {
         cleanup();
-        reject(new Error('Unable to read audio metadata.'));
+        reject(new Error("Unable to read audio metadata."));
       };
     });
   }
@@ -59,7 +59,11 @@ export class AudioProcessor {
     }
 
     const context = this.getContext();
-    const monoBuffer = context.createBuffer(1, buffer.length, buffer.sampleRate);
+    const monoBuffer = context.createBuffer(
+      1,
+      buffer.length,
+      buffer.sampleRate,
+    );
     const monoData = monoBuffer.getChannelData(0);
     const channelCount = buffer.numberOfChannels;
 
@@ -84,7 +88,11 @@ export class AudioProcessor {
     }
 
     const targetLength = Math.ceil(monoBuffer.duration * targetSampleRate);
-    const offlineContext = new OfflineAudioContext(1, targetLength, targetSampleRate);
+    const offlineContext = new OfflineAudioContext(
+      1,
+      targetLength,
+      targetSampleRate,
+    );
     const source = offlineContext.createBufferSource();
     source.buffer = monoBuffer;
     source.connect(offlineContext.destination);
@@ -105,10 +113,10 @@ export class AudioProcessor {
       }
     };
 
-    writeString(0, 'RIFF');
+    writeString(0, "RIFF");
     view.setUint32(4, 36 + dataSize, true);
-    writeString(8, 'WAVE');
-    writeString(12, 'fmt ');
+    writeString(8, "WAVE");
+    writeString(12, "fmt ");
     view.setUint32(16, 16, true);
     view.setUint16(20, 1, true);
     view.setUint16(22, 1, true);
@@ -116,13 +124,17 @@ export class AudioProcessor {
     view.setUint32(28, sampleRate * bytesPerSample, true);
     view.setUint16(32, bytesPerSample, true);
     view.setUint16(34, 16, true);
-    writeString(36, 'data');
+    writeString(36, "data");
     view.setUint32(40, dataSize, true);
 
     let offset = 44;
     for (let i = 0; i < samples.length; i++) {
       const sample = Math.max(-1, Math.min(1, samples[i] ?? 0));
-      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+      view.setInt16(
+        offset,
+        sample < 0 ? sample * 0x8000 : sample * 0x7fff,
+        true,
+      );
       offset += bytesPerSample;
     }
 
@@ -131,7 +143,7 @@ export class AudioProcessor {
 
   private createWavBlob(samples: Float32Array, sampleRate: number): Blob {
     const wavBuffer = this.encodeWav(samples, sampleRate);
-    return new Blob([wavBuffer], { type: 'audio/wav' });
+    return new Blob([wavBuffer], { type: "audio/wav" });
   }
 
   async normalizeAudio(file: File): Promise<Blob> {
@@ -145,7 +157,7 @@ export class AudioProcessor {
   async splitAudio(
     file: File,
     segmentDuration: number = 900,
-    overlap: number = 3
+    overlap: number = 3,
   ): Promise<Blob[]> {
     const decoded = await this.decodeToAudioBuffer(file);
     const normalized = await this.resampleToMono16k(decoded);
@@ -172,7 +184,10 @@ export class AudioProcessor {
         break;
       }
 
-      const chunkSamples = samples.subarray(chunkStart, chunkStart + chunkLength);
+      const chunkSamples = samples.subarray(
+        chunkStart,
+        chunkStart + chunkLength,
+      );
       chunks.push(this.createWavBlob(chunkSamples, sampleRate));
 
       if (chunkStart + chunkLength >= samples.length) {

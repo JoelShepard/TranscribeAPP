@@ -1,9 +1,9 @@
-import type { CapacitorConfig } from '@capacitor/cli';
+import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: 'com.transcribe.app',
-  appName: 'TranscribeJS',
-  webDir: 'dist'
+  appId: "com.transcribe.app",
+  appName: "TranscribeJS",
+  webDir: "dist",
 };
 
 export default config;

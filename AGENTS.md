@@ -5,7 +5,8 @@ This document serves as the primary instruction set for AI agents and developers
 ## 1. Project Overview & Environment
 
 **Tech Stack:**
-- **Runtime:** Bun (v1.3+) - *Do not use Node.js/npm directly.*
+
+- **Runtime:** Bun (v1.3+) - _Do not use Node.js/npm directly._
 - **Frontend:** React 19, TypeScript, TailwindCSS v4.
 - **Desktop:** Tauri v2 (Rust-based backend, uses `src-tauri/`).
 - **Mobile:** Capacitor (Android).
@@ -13,6 +14,7 @@ This document serves as the primary instruction set for AI agents and developers
 - **Bundler:** Custom build scripts (`build.ts`, `dev.ts`) using `bun build`.
 
 **Key Constraints:**
+
 - Always use `bun` for package management and script execution.
 - `dist/` is the build output directory; do not edit files there manually.
 - The project uses ESM modules (`type: "module"` in `package.json`).
@@ -21,17 +23,19 @@ This document serves as the primary instruction set for AI agents and developers
 ## 2. Build, Test, and Execution
 
 ### Primary Commands
-| Action | Command | Description |
-| :--- | :--- | :--- |
-| **Install** | `bun install` | Install dependencies. |
-| **Dev (Web)** | `bun run dev` | Hot-reloading server for web/UI development. |
-| **Build (Web)** | `bun run build` | Compiles React/TS to `./dist`. |
-| **Run (Tauri)** | `bun run dev:tauri` | Starts Tauri dev environment with hot-reload. |
-| **Build (Tauri)** | `bun run build:tauri` | Compiles optimized Tauri binary for Linux. |
-| **Pkg (Arch)** | `makepkg -si` | Builds and installs full Arch Linux package (PKGBUILD). |
-| **Android Sync** | `bun run cap:sync` | Builds and syncs assets to Android project. |
+
+| Action            | Command               | Description                                             |
+| :---------------- | :-------------------- | :------------------------------------------------------ |
+| **Install**       | `bun install`         | Install dependencies.                                   |
+| **Dev (Web)**     | `bun run dev`         | Hot-reloading server for web/UI development.            |
+| **Build (Web)**   | `bun run build`       | Compiles React/TS to `./dist`.                          |
+| **Run (Tauri)**   | `bun run dev:tauri`   | Starts Tauri dev environment with hot-reload.           |
+| **Build (Tauri)** | `bun run build:tauri` | Compiles optimized Tauri binary for Linux.              |
+| **Pkg (Arch)**    | `makepkg -si`         | Builds and installs full Arch Linux package (PKGBUILD). |
+| **Android Sync**  | `bun run cap:sync`    | Builds and syncs assets to Android project.             |
 
 ### Testing
+
 - **Runner:** `bun test` (Built-in Bun test runner).
 - **Run All Tests:** `bun test`
 - **Run Single File:** `bun test path/to/file.test.ts`
@@ -40,6 +44,7 @@ This document serves as the primary instruction set for AI agents and developers
 ## 3. Code Style & Conventions
 
 ### TypeScript & React
+
 - **Strict Mode:** TypeScript `strict: true` is enabled. No `any` unless absolutely necessary.
 - **Components:** Use Functional Components with named exports.
   ```tsx
@@ -53,13 +58,15 @@ This document serves as the primary instruction set for AI agents and developers
 - **Production UX:** Do not add platform/debug notice banners in the main UI unless explicitly requested by the user.
 
 ### Styling (TailwindCSS)
+
 - **Version:** TailwindCSS v4.
 - **Usage:** Use utility classes directly in JSX.
 - **Conditional Classes:** Use `clsx` and `tailwind-merge`.
+
   ```tsx
-  import { clsx } from 'clsx';
-  import { twMerge } from 'tailwind-merge';
-  
+  import { clsx } from "clsx";
+  import { twMerge } from "tailwind-merge";
+
   export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
   }
@@ -67,6 +74,7 @@ This document serves as the primary instruction set for AI agents and developers
   ```
 
 ### Naming Conventions
+
 - **Files:**
   - Components: `PascalCase.tsx` (e.g., `AudioRecorder.tsx`)
   - Utilities/Services: `camelCase.ts` (e.g., `audioProcessor.ts`)
@@ -90,7 +98,7 @@ This document serves as the primary instruction set for AI agents and developers
 - **UI Feedback:** Always reflect error states in the UI (e.g., set `status` state to `'error'` and display a message).
 - **Logging:** Log errors to console with context.
   ```ts
-  console.error('[ServiceName] Error performing action:', err);
+  console.error("[ServiceName] Error performing action:", err);
   ```
 
 ## 6. Anti-Regression Rules
@@ -101,17 +109,19 @@ These rules exist because of past incidents. Every rule below protects a real fa
 
 The version string is declared in **four** files. All four MUST be updated atomically in the same commit when bumping a version:
 
-| File | Field |
-| :--- | :--- |
-| `package.json` | `"version"` |
-| `src-tauri/tauri.conf.json` | `"version"` |
-| `src-tauri/Cargo.toml` | `version` under `[package]` |
-| `PKGBUILD` | `pkgver` |
+| File                        | Field                       |
+| :-------------------------- | :-------------------------- |
+| `package.json`              | `"version"`                 |
+| `src-tauri/tauri.conf.json` | `"version"`                 |
+| `src-tauri/Cargo.toml`      | `version` under `[package]` |
+| `PKGBUILD`                  | `pkgver`                    |
 
 **Verification:** After any version bump, run:
+
 ```bash
 grep -E '"version"' package.json src-tauri/tauri.conf.json && grep '^version' src-tauri/Cargo.toml && grep '^pkgver' PKGBUILD
 ```
+
 All four must print the same value. If they diverge, the release is broken.
 
 ### 6.2 Tauri CSP (`connect-src`) Guard
@@ -127,10 +137,10 @@ The Content Security Policy in `src-tauri/tauri.conf.json` → `app.security.csp
 
 Audio recording has two completely separate code paths in `App.tsx`:
 
-| Condition | Path | Implementation |
-| :--- | :--- | :--- |
+| Condition              | Path   | Implementation                                                                                            |
+| :--------------------- | :----- | :-------------------------------------------------------------------------------------------------------- |
 | `tauriEnv && linuxEnv` | Native | Rust `cpal` via `invoke('start_native_recording')` / `invoke('stop_native_recording')`, returns WAV bytes |
-| Everything else | Web | `navigator.mediaDevices.getUserMedia()` + `MediaRecorder` API, produces webm/ogg blob |
+| Everything else        | Web    | `navigator.mediaDevices.getUserMedia()` + `MediaRecorder` API, produces webm/ogg blob                     |
 
 - **Rule:** Any change to recording logic must be tested on **both** paths. A fix that works on web may break Tauri native, and vice versa.
 - **Rule:** Do not unify the two paths unless both are fully validated. They exist separately because `MediaRecorder` is unreliable inside Tauri's Linux webview.
@@ -159,12 +169,12 @@ The build uses two custom scripts (`build.ts` and `dev.ts`) that call the Tailwi
 
 There are exactly **four** GitHub Actions workflows. Do not add or remove workflows without explicit approval.
 
-| Workflow | Trigger | Purpose |
-| :--- | :--- | :--- |
-| `ci-tests.yml` | PR to `main` | Runs `bun test` |
-| `publish-ghcr.yml` | Tag `v*` | Builds and pushes Docker image to GHCR (multi-arch: amd64 + arm64) |
-| `release-linux-desktop.yml` | Tag `v*` | Builds Tauri binary (`--no-bundle`) and publishes to GitHub Releases |
-| `release-android-apk.yml` | Tag `v*` | Builds signed APK and publishes to GitHub Releases |
+| Workflow                    | Trigger      | Purpose                                                              |
+| :-------------------------- | :----------- | :------------------------------------------------------------------- |
+| `ci-tests.yml`              | PR to `main` | Runs `bun test`                                                      |
+| `publish-ghcr.yml`          | Tag `v*`     | Builds and pushes Docker image to GHCR (multi-arch: amd64 + arm64)   |
+| `release-linux-desktop.yml` | Tag `v*`     | Builds Tauri binary (`--no-bundle`) and publishes to GitHub Releases |
+| `release-android-apk.yml`   | Tag `v*`     | Builds signed APK and publishes to GitHub Releases                   |
 
 - **Rule:** The Linux desktop workflow uses `ubuntu-22.04` (pinned), not `ubuntu-latest`. Do not change this — the Tauri v2 build depends on specific `libwebkit2gtk-4.1-dev` availability.
 - **Rule:** The desktop build uses `--no-bundle`. No AppImage, deb, or rpm formats are produced. Only the raw binary is released.
