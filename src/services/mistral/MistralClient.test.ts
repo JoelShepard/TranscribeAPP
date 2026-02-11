@@ -58,4 +58,22 @@ describe('MistralClient', () => {
     const client = new MistralClient('key');
     await expect(client.transcribe(new Blob(['audio']))).rejects.toThrow('HTTP 504: gateway timeout');
   });
+
+  it('uses custom model when provided', async () => {
+    let capturedInit: RequestInit | undefined;
+
+    globalThis.fetch = (async (_url: string | URL | Request, init?: RequestInit) => {
+      capturedInit = init;
+      return new Response(JSON.stringify({ text: 'ok' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }) as unknown as typeof fetch;
+
+    const client = new MistralClient('key', 'mistral-small');
+    await client.transcribe(new Blob(['audio-bytes'], { type: 'audio/wav' }));
+
+    const body = capturedInit?.body as FormData;
+    expect(body.get('model')).toBe('mistral-small');
+  });
 });

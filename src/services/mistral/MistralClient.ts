@@ -1,9 +1,11 @@
 export class MistralClient {
   private apiKey: string;
+  private model: string;
   private baseUrl = "https://api.mistral.ai/v1";
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, model: string = "voxtral-mini-latest") {
     this.apiKey = apiKey;
+    this.model = model;
   }
 
   async transcribe(audioBlob: Blob): Promise<string> {
@@ -11,7 +13,7 @@ export class MistralClient {
     
     const formData = new FormData();
     formData.append("file", audioBlob, "audio.mp3");
-    formData.append("model", "voxtral-mini-latest");
+    formData.append("model", this.model);
 
     console.log('[MistralClient] Sending request to Mistral API...');
     const response = await fetch(`${this.baseUrl}/audio/transcriptions`, {

@@ -24,9 +24,9 @@ Track important project goals here. Mark items as completed only when fully veri
 - [x] **UI**: Add a CSS-based audio visualizer (bars or wave) during recording state.
 - [x] **Feature**: Implement `HistoryContext` to store transcription metadata in `localStorage`.
 - [x] **Feature**: Create a "History" sidebar/modal to list past transcriptions.
-- [ ] **Feature**: Add "Export to Markdown" button in the result view.
-- [ ] **Feature**: Add "Export to JSON" button (including metadata like date, duration).
-- [ ] **Settings**: Add model selection dropdown (e.g., `mistral-tiny`, `mistral-small`) to Settings.
+- [x] **Feature**: Add "Export to Markdown" button in the result view.
+- [x] **Feature**: Add "Export to JSON" button (including metadata like date, duration).
+- [x] **Settings**: Add model selection dropdown (e.g., `mistral-tiny`, `mistral-small`) to Settings.
 - [ ] **Settings**: Add source language input field (optional) for Mistral API.
 - [ ] **UX**: Implement `Ctrl+Enter` shortcut to save settings.
 - [ ] **UX**: Implement `Esc` shortcut to close the Settings modal.

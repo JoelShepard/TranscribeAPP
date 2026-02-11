@@ -17,6 +17,23 @@ function cn(...inputs: ClassValue[]) {
 type Status = 'idle' | 'recording' | 'processing' | 'transcribing' | 'done' | 'error';
 type ProcessingSource = 'upload' | 'recording';
 
+const TRANSCRIPTION_MODELS = [
+  { value: 'voxtral-mini-latest', label: 'voxtral-mini-latest (default)' },
+  { value: 'mistral-small', label: 'mistral-small' },
+  { value: 'mistral-tiny', label: 'mistral-tiny' },
+] as const;
+
+const DEFAULT_TRANSCRIPTION_MODEL = TRANSCRIPTION_MODELS[0].value;
+
+interface ResultMetadata {
+  fileName: string;
+  durationSeconds: number;
+  source: ProcessingSource;
+  transcriptionChars: number;
+  wordCount: number;
+  processedAt: string;
+}
+
 function isLinuxPlatform(): boolean {
   return typeof navigator !== 'undefined' && /linux/i.test(navigator.userAgent);
 }
@@ -74,11 +91,13 @@ export default function App() {
   const { theme, toggleTheme } = useTheme();
   const { history, addHistoryItem, clearHistory } = useHistory();
   const [apiKey, setApiKey] = useState('');
+  const [transcriptionModel, setTranscriptionModel] = useState<string>(DEFAULT_TRANSCRIPTION_MODEL);
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
   const [progress, setProgress] = useState('');
   const [transcription, setTranscription] = useState('');
+  const [resultMetadata, setResultMetadata] = useState<ResultMetadata | null>(null);
   const [error, setError] = useState('');
   const [tauriEnv, setTauriEnv] = useState(() => isTauriRuntime());
   const [linuxEnv, setLinuxEnv] = useState(false);
@@ -96,11 +115,18 @@ export default function App() {
     setLinuxEnv(isLinuxPlatform());
     const storedKey = localStorage.getItem('mistral_api_key');
     if (storedKey) setApiKey(storedKey);
-    
+    const storedModel = localStorage.getItem('mistral_model');
+    if (storedModel) {
+      const matchingModel = TRANSCRIPTION_MODELS.find((model) => model.value === storedModel);
+      if (matchingModel) {
+        setTranscriptionModel(matchingModel.value);
+      }
+    }
   }, []);
 
-  const saveApiKey = () => {
+  const saveSettings = () => {
     localStorage.setItem('mistral_api_key', apiKey);
+    localStorage.setItem('mistral_model', transcriptionModel);
     setShowSettings(false);
   };
 
@@ -260,6 +286,7 @@ export default function App() {
     try {
       setError('');
       setTranscription('');
+      setResultMetadata(null);
       setStatus('processing');
       setProgress('Analyzing audio...');
       
@@ -269,7 +296,7 @@ export default function App() {
       const duration = await audioProcessor.getAudioDuration(file);
       console.log(`[App] Audio Duration: ${duration}s`);
 
-      const client = new MistralClient(apiKey);
+      const client = new MistralClient(apiKey, transcriptionModel);
       let results: string[] = [];
 
       // Thresholds: 15 mins (900s) or 25MB (approx check)
@@ -305,6 +332,7 @@ export default function App() {
       const fullTranscription = results.join(' ');
       console.log('[App] Full transcription length:', fullTranscription.length, 'chars');
       const wordCount = fullTranscription.trim().length > 0 ? fullTranscription.trim().split(/\s+/).length : 0;
+      const processedAt = new Date().toISOString();
 
       addHistoryItem({
         fileName: file.name,
@@ -312,6 +340,15 @@ export default function App() {
         source,
         transcriptionChars: fullTranscription.length,
         wordCount,
+      });
+
+      setResultMetadata({
+        fileName: file.name,
+        durationSeconds: duration,
+        source,
+        transcriptionChars: fullTranscription.length,
+        wordCount,
+        processedAt,
       });
 
       setTranscription(fullTranscription);
@@ -348,6 +385,62 @@ export default function App() {
     a.href = url;
     a.download = 'transcription.txt';
     a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportToMarkdown = () => {
+    const markdown = [
+      '# Transcription Result',
+      '',
+      `Generated: ${new Date().toLocaleString()}`,
+      '',
+      '## Transcript',
+      '',
+      transcription || '_No transcription available._',
+      '',
+    ].join('\n');
+
+    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'transcription.md';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportToJson = () => {
+    const exportDate = new Date().toISOString();
+    const metadata = resultMetadata
+      ? {
+          ...resultMetadata,
+          durationFormatted: formatDuration(resultMetadata.durationSeconds),
+        }
+      : {
+          fileName: 'unknown',
+          durationSeconds: 0,
+          durationFormatted: formatDuration(0),
+          source: 'upload' as ProcessingSource,
+          transcriptionChars: transcription.length,
+          wordCount: transcription.trim().length > 0 ? transcription.trim().split(/\s+/).length : 0,
+          processedAt: exportDate,
+        };
+
+    const payload = {
+      metadata: {
+        ...metadata,
+        exportedAt: exportDate,
+      },
+      transcript: transcription,
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'transcription.json';
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const formatDuration = (seconds: number) => {
@@ -386,6 +479,7 @@ export default function App() {
                 onClick={() => {
                   setStatus('idle');
                   setTranscription('');
+                  setResultMetadata(null);
                   setError('');
                 }}
                 className="flex items-center gap-3 hover:opacity-80 transition-opacity"
@@ -468,11 +562,25 @@ export default function App() {
                         className="flex-1 p-3.5 rounded-2xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/50 outline-none"
                     />
                     <button 
-                        onClick={saveApiKey}
+                        onClick={saveSettings}
                         className="bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] px-7 py-3 rounded-2xl hover:opacity-90 font-bold"
                     >
                         Save
                     </button>
+                </div>
+                <div className="mt-4">
+                  <label className="block text-base font-semibold text-[var(--md-sys-color-on-surface)] mb-2">Transcription Model</label>
+                  <select
+                    value={transcriptionModel}
+                    onChange={(e) => setTranscriptionModel(e.target.value)}
+                    className="w-full p-3.5 rounded-2xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/50 outline-none"
+                  >
+                    {TRANSCRIPTION_MODELS.map((model) => (
+                      <option key={model.value} value={model.value}>
+                        {model.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-3">Key is stored locally on your device.</p>
                 <a
@@ -677,6 +785,20 @@ export default function App() {
                         <button onClick={downloadText} className="p-2.5 hover:bg-[var(--md-sys-color-surface-container-highest)] rounded-xl text-[var(--md-sys-color-on-surface-variant)]" title="Save">
                             <Save className="w-5 h-5" />
                         </button>
+                        <button
+                          onClick={exportToMarkdown}
+                          className="px-3 py-2.5 hover:bg-[var(--md-sys-color-surface-container-highest)] rounded-xl text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)]"
+                          title="Export Markdown"
+                        >
+                          .md
+                        </button>
+                        <button
+                          onClick={exportToJson}
+                          className="px-3 py-2.5 hover:bg-[var(--md-sys-color-surface-container-highest)] rounded-xl text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)]"
+                          title="Export JSON"
+                        >
+                          .json
+                        </button>
                     </div>
                 </div>
                 <div className="p-6">
@@ -688,7 +810,10 @@ export default function App() {
                 </div>
                 <div className="bg-[var(--md-sys-color-surface-container-high)] px-6 py-4 border-t border-[color:var(--md-sys-color-outline)]/30 text-center">
                     <button 
-                        onClick={() => setStatus('idle')}
+                        onClick={() => {
+                          setStatus('idle');
+                          setResultMetadata(null);
+                        }}
                         className="text-[var(--md-sys-color-primary)] font-bold hover:opacity-80"
                     >
                         Transcribe Another File
