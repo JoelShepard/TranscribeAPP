@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Mic, FileAudio, Settings, Save, Copy, Check, Loader2, StopCircle, Sun, Moon, AudioLines, ExternalLink, History, X, Trash2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -81,6 +81,22 @@ function getErrorDetails(err: unknown): string {
   return ERROR_MESSAGES.unknownError;
 }
 
+function formatDuration(seconds: number): string {
+  const safeSeconds = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const remainingSeconds = safeSeconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
+
+function formatCreatedAt(dateValue: string): string {
+  const parsed = new Date(dateValue);
+  if (Number.isNaN(parsed.getTime())) {
+    return 'Unknown date';
+  }
+
+  return parsed.toLocaleString();
+}
+
 export default function App() {
   const { theme, toggleTheme } = useTheme();
   const { history, addHistoryItem, clearHistory } = useHistory();
@@ -106,6 +122,30 @@ export default function App() {
   const chunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const visualizerBars = useMemo(() => Array.from({ length: 8 }, (_, index) => index), []);
+  const historyCountText = useMemo(
+    () => `${history.length} ${history.length === 1 ? 'item' : 'items'} saved locally`,
+    [history.length],
+  );
+  const historyList = useMemo(
+    () =>
+      history.map((item) => {
+        const createdAtLabel = formatCreatedAt(item.createdAt);
+        const durationLabel = formatDuration(item.durationSeconds);
+        const charsLabel = item.transcriptionChars.toLocaleString();
+        const wordsLabel = item.wordCount.toLocaleString();
+
+        return {
+          ...item,
+          createdAtLabel,
+          durationLabel,
+          charsLabel,
+          wordsLabel,
+        };
+      }),
+    [history],
+  );
 
   useEffect(() => {
     setTauriEnv(isTauriRuntime());
@@ -475,22 +515,6 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
-  const formatDuration = (seconds: number) => {
-    const safeSeconds = Math.max(0, Math.floor(seconds));
-    const minutes = Math.floor(safeSeconds / 60);
-    const remainingSeconds = safeSeconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  const formatCreatedAt = (dateValue: string) => {
-    const parsed = new Date(dateValue);
-    if (Number.isNaN(parsed.getTime())) {
-      return 'Unknown date';
-    }
-
-    return parsed.toLocaleString();
-  };
-
   return (
     <div className={cn(
       "min-h-screen bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] transition-colors duration-200 relative overflow-x-hidden",
@@ -667,7 +691,7 @@ export default function App() {
 
             <div className="px-5 py-3 border-b border-[color:var(--md-sys-color-outline)]/20 flex justify-between items-center gap-3">
               <p className="text-sm text-[var(--md-sys-color-on-surface-variant)]">
-                {history.length} {history.length === 1 ? 'item' : 'items'} saved locally
+                {historyCountText}
               </p>
               <button
                 type="button"
@@ -689,7 +713,7 @@ export default function App() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {history.map((item) => (
+                  {historyList.map((item) => (
                     <article
                       key={item.id}
                       className="rounded-2xl border border-[color:var(--md-sys-color-outline)]/25 bg-[var(--md-sys-color-surface-container)] p-4"
@@ -700,19 +724,19 @@ export default function App() {
                           {item.source === 'recording' ? 'Recording' : 'Upload'}
                         </span>
                       </div>
-                      <p className="mt-2 text-xs text-[var(--md-sys-color-on-surface-variant)]">{formatCreatedAt(item.createdAt)}</p>
+                      <p className="mt-2 text-xs text-[var(--md-sys-color-on-surface-variant)]">{item.createdAtLabel}</p>
                       <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                         <div className="rounded-xl bg-[var(--md-sys-color-surface)] px-2 py-1.5 border border-[color:var(--md-sys-color-outline)]/20">
                           <p className="text-[var(--md-sys-color-on-surface-variant)]">Duration</p>
-                          <p className="font-semibold text-[var(--md-sys-color-on-surface)]">{formatDuration(item.durationSeconds)}</p>
+                          <p className="font-semibold text-[var(--md-sys-color-on-surface)]">{item.durationLabel}</p>
                         </div>
                         <div className="rounded-xl bg-[var(--md-sys-color-surface)] px-2 py-1.5 border border-[color:var(--md-sys-color-outline)]/20">
                           <p className="text-[var(--md-sys-color-on-surface-variant)]">Chars</p>
-                          <p className="font-semibold text-[var(--md-sys-color-on-surface)]">{item.transcriptionChars.toLocaleString()}</p>
+                          <p className="font-semibold text-[var(--md-sys-color-on-surface)]">{item.charsLabel}</p>
                         </div>
                         <div className="rounded-xl bg-[var(--md-sys-color-surface)] px-2 py-1.5 border border-[color:var(--md-sys-color-outline)]/20">
                           <p className="text-[var(--md-sys-color-on-surface-variant)]">Words</p>
-                          <p className="font-semibold text-[var(--md-sys-color-on-surface)]">{item.wordCount.toLocaleString()}</p>
+                          <p className="font-semibold text-[var(--md-sys-color-on-surface)]">{item.wordsLabel}</p>
                         </div>
                       </div>
                     </article>
@@ -792,7 +816,7 @@ export default function App() {
                 <h2 className="text-2xl font-extrabold text-[var(--md-sys-color-on-surface)] mb-2">Recording...</h2>
                 <p className="text-[var(--md-sys-color-on-surface-variant)] mb-8">Speak clearly into the microphone</p>
                 <div className="audio-visualizer mb-8" aria-hidden="true">
-                  {[0, 1, 2, 3, 4, 5, 6, 7].map((bar) => (
+                  {visualizerBars.map((bar) => (
                     <span
                       key={bar}
                       className="audio-visualizer-bar"

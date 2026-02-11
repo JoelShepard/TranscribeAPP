@@ -38,9 +38,9 @@ Track important project goals here. Mark items as completed only when fully veri
 - [x] **Docs**: Create `CONTRIBUTING.md` with development guidelines.
 - [x] **Android**: Verify and update adaptive icons for Android build.
 - [x] **Android**: Create a branded splash screen for the Android app.
-- [ ] **Tauri**: Customize the native window menu (File, Edit, View) or hide it if unnecessary.
-- [ ] **Tauri**: Implement a basic system tray icon using Tauri API.
-- [ ] **Performance**: Optimize `App.tsx` with `useMemo` for expensive renders.
+- [x] **Tauri**: Customize the native window menu (File, Edit, View) or hide it if unnecessary.
+- [x] **Tauri**: Implement a basic system tray icon using Tauri API.
+- [x] **Performance**: Optimize `App.tsx` with `useMemo` for expensive renders.
 - [ ] **Error Handling**: implementation of a global React Error Boundary.
 - [ ] **Audio**: explicitly test and list supported formats (WAV, MP3, M4A, OGG) in the UI.
 - [ ] **Analytics**: Add a simple local counter for "Total Files Transcribed".

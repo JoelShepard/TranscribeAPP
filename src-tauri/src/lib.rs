@@ -1,5 +1,12 @@
 use std::sync::Mutex;
 
+#[cfg(desktop)]
+use tauri::{
+    menu::{MenuBuilder, MenuItemBuilder},
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    Manager,
+};
+
 #[cfg(not(any(target_os = "android", target_os = "ios")))]
 use std::{io::Cursor, sync::Arc};
 
@@ -310,6 +317,35 @@ fn stop_native_recording(_state: tauri::State<'_, RecorderState>) -> Result<Vec<
     Err("Native recording is not available on this platform.".to_string())
 }
 
+#[cfg(desktop)]
+fn toggle_main_window(app_handle: &tauri::AppHandle) {
+    let Some(window) = app_handle.get_webview_window("main") else {
+        log::warn!("[Tray] Main window not found while toggling visibility");
+        return;
+    };
+
+    match window.is_visible() {
+        Ok(true) => {
+            if let Err(err) = window.hide() {
+                log::error!("[Tray] Failed to hide window: {err}");
+            }
+        }
+        Ok(false) => {
+            if let Err(err) = window.show() {
+                log::error!("[Tray] Failed to show window: {err}");
+                return;
+            }
+
+            if let Err(err) = window.set_focus() {
+                log::warn!("[Tray] Failed to focus window: {err}");
+            }
+        }
+        Err(err) => {
+            log::error!("[Tray] Failed to read window visibility: {err}");
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -324,6 +360,60 @@ pub fn run() {
             } else {
                 log::LevelFilter::Info
             };
+
+            #[cfg(desktop)]
+            if let Err(err) = app.handle().remove_menu() {
+                log::warn!("[AppSetup] Failed to remove native window menu: {err}");
+            }
+
+            #[cfg(desktop)]
+            {
+                let toggle_item = MenuItemBuilder::with_id("toggle-window", "Show/Hide")
+                    .build(app)
+                    .map_err(|err| {
+                        log::error!("[Tray] Failed to build toggle menu item: {err}");
+                        err
+                    })?;
+
+                let quit_item = MenuItemBuilder::with_id("quit-app", "Quit")
+                    .build(app)
+                    .map_err(|err| {
+                        log::error!("[Tray] Failed to build quit menu item: {err}");
+                        err
+                    })?;
+
+                let tray_menu = MenuBuilder::new(app)
+                    .items(&[&toggle_item, &quit_item])
+                    .build()
+                    .map_err(|err| {
+                        log::error!("[Tray] Failed to build tray menu: {err}");
+                        err
+                    })?;
+
+                TrayIconBuilder::with_id("main-tray")
+                    .menu(&tray_menu)
+                    .show_menu_on_left_click(false)
+                    .on_menu_event(|app_handle, event| match event.id.as_ref() {
+                        "toggle-window" => toggle_main_window(app_handle),
+                        "quit-app" => app_handle.exit(0),
+                        _ => {}
+                    })
+                    .on_tray_icon_event(|tray, event| {
+                        if let TrayIconEvent::Click {
+                            button: MouseButton::Left,
+                            button_state: MouseButtonState::Up,
+                            ..
+                        } = event
+                        {
+                            toggle_main_window(tray.app_handle());
+                        }
+                    })
+                    .build(app)
+                    .map_err(|err| {
+                        log::error!("[Tray] Failed to create system tray icon: {err}");
+                        err
+                    })?;
+            }
 
             app.handle().plugin(
                 tauri_plugin_log::Builder::default()
