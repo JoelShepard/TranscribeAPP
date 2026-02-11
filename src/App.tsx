@@ -136,6 +136,13 @@ export default function App() {
     setShowSettings(false);
   };
 
+  const handleSettingsKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.ctrlKey && e.key === 'Enter') {
+      e.preventDefault();
+      saveSettings();
+    }
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -556,7 +563,10 @@ export default function App() {
 
       {/* Settings Modal/Area */}
       {showSettings && (
-        <div className="mx-6 max-w-4xl md:mx-auto mb-2 rounded-[30px] border border-[color:var(--md-sys-color-outline)]/30 bg-[var(--md-sys-color-surface-container)] p-6 animate-in slide-in-from-top-2 shadow-[0_8px_28px_rgba(22,27,45,0.10)] dark:shadow-[0_8px_28px_rgba(0,0,0,0.25)]">
+        <div
+          onKeyDown={handleSettingsKeyDown}
+          className="mx-6 max-w-4xl md:mx-auto mb-2 rounded-[30px] border border-[color:var(--md-sys-color-outline)]/30 bg-[var(--md-sys-color-surface-container)] p-6 animate-in slide-in-from-top-2 shadow-[0_8px_28px_rgba(22,27,45,0.10)] dark:shadow-[0_8px_28px_rgba(0,0,0,0.25)]"
+        >
             <div className="max-w-2xl mx-auto">
                 <label className="block text-base font-semibold text-[var(--md-sys-color-on-surface)] mb-2">Mistral API Key</label>
                 <div className="flex flex-col sm:flex-row gap-3">
