@@ -92,6 +92,7 @@ export default function App() {
   const { history, addHistoryItem, clearHistory } = useHistory();
   const [apiKey, setApiKey] = useState('');
   const [transcriptionModel, setTranscriptionModel] = useState<string>(DEFAULT_TRANSCRIPTION_MODEL);
+  const [sourceLanguage, setSourceLanguage] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
@@ -122,11 +123,16 @@ export default function App() {
         setTranscriptionModel(matchingModel.value);
       }
     }
+    const storedSourceLanguage = localStorage.getItem('mistral_source_language');
+    if (storedSourceLanguage) {
+      setSourceLanguage(storedSourceLanguage);
+    }
   }, []);
 
   const saveSettings = () => {
     localStorage.setItem('mistral_api_key', apiKey);
     localStorage.setItem('mistral_model', transcriptionModel);
+    localStorage.setItem('mistral_source_language', sourceLanguage.trim());
     setShowSettings(false);
   };
 
@@ -296,7 +302,7 @@ export default function App() {
       const duration = await audioProcessor.getAudioDuration(file);
       console.log(`[App] Audio Duration: ${duration}s`);
 
-      const client = new MistralClient(apiKey, transcriptionModel);
+      const client = new MistralClient(apiKey, transcriptionModel, sourceLanguage);
       let results: string[] = [];
 
       // Thresholds: 15 mins (900s) or 25MB (approx check)
@@ -581,6 +587,16 @@ export default function App() {
                       </option>
                     ))}
                   </select>
+                </div>
+                <div className="mt-4">
+                  <label className="block text-base font-semibold text-[var(--md-sys-color-on-surface)] mb-2">Source Language (optional)</label>
+                  <input
+                    type="text"
+                    value={sourceLanguage}
+                    onChange={(e) => setSourceLanguage(e.target.value)}
+                    placeholder="Auto-detect (e.g. en, it, fr)"
+                    className="w-full p-3.5 rounded-2xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/50 outline-none"
+                  />
                 </div>
                 <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-3">Key is stored locally on your device.</p>
                 <a

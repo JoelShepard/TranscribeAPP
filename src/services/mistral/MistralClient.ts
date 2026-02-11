@@ -1,11 +1,16 @@
 export class MistralClient {
   private apiKey: string;
   private model: string;
+  private sourceLanguage?: string;
   private baseUrl = "https://api.mistral.ai/v1";
 
-  constructor(apiKey: string, model: string = "voxtral-mini-latest") {
+  constructor(apiKey: string, model: string = "voxtral-mini-latest", sourceLanguage?: string) {
     this.apiKey = apiKey;
     this.model = model;
+    const normalizedSourceLanguage = sourceLanguage?.trim();
+    this.sourceLanguage = normalizedSourceLanguage && normalizedSourceLanguage.length > 0
+      ? normalizedSourceLanguage
+      : undefined;
   }
 
   async transcribe(audioBlob: Blob): Promise<string> {
@@ -14,6 +19,9 @@ export class MistralClient {
     const formData = new FormData();
     formData.append("file", audioBlob, "audio.mp3");
     formData.append("model", this.model);
+    if (this.sourceLanguage) {
+      formData.append("language", this.sourceLanguage);
+    }
 
     console.log('[MistralClient] Sending request to Mistral API...');
     const response = await fetch(`${this.baseUrl}/audio/transcriptions`, {

@@ -27,7 +27,7 @@ Track important project goals here. Mark items as completed only when fully veri
 - [x] **Feature**: Add "Export to Markdown" button in the result view.
 - [x] **Feature**: Add "Export to JSON" button (including metadata like date, duration).
 - [x] **Settings**: Add model selection dropdown (e.g., `mistral-tiny`, `mistral-small`) to Settings.
-- [ ] **Settings**: Add source language input field (optional) for Mistral API.
+- [x] **Settings**: Add source language input field (optional) for Mistral API.
 - [ ] **UX**: Implement `Ctrl+Enter` shortcut to save settings.
 - [ ] **UX**: Implement `Esc` shortcut to close the Settings modal.
 - [ ] **UX**: Add visual feedback (checkmark) to the "Copy" button when clicked.
