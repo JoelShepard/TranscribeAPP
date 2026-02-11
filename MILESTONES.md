@@ -34,7 +34,7 @@ Track important project goals here. Mark items as completed only when fully veri
 - [x] **Refactor**: Extract hardcoded error messages to `src/constants/messages.ts`.
 - [x] **Refactor**: Move TypeScript interfaces from `App.tsx` to `src/types/index.ts`.
 - [x] **CI**: Add a linting script to `package.json` and a CI step for `bun run lint`.
-- [ ] **Docs**: Update `README.md` with new screenshots and "How to use" section.
+- [x] **Docs**: Update `README.md` with new screenshots and "How to use" section.
 - [ ] **Docs**: Create `CONTRIBUTING.md` with development guidelines.
 - [ ] **Android**: Verify and update adaptive icons for Android build.
 - [ ] **Android**: Create a branded splash screen for the Android app.

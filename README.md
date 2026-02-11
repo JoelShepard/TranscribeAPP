@@ -2,6 +2,25 @@
 
 TranscribeJS is an audio transcription app powered by Mistral AI, built with React, TypeScript, and Bun.
 
+## Screenshots
+
+### Desktop (Web)
+
+![TranscribeJS desktop home screen](docs/screenshots/web-desktop-home.png)
+
+### Mobile (Web)
+
+![TranscribeJS mobile home screen](docs/screenshots/web-mobile-home.png)
+
+## How To Use
+
+1. Open the app (`bun run dev` for web or `bun run dev:tauri` for desktop).
+2. Open **Settings** and paste your Mistral API key.
+3. Optionally choose a transcription model and source language, then save.
+4. Upload an audio file (or drag and drop) or record directly from the microphone.
+5. Wait for processing, then review the transcript and export it as `.txt`, `.md`, or `.json`.
+6. Use the History panel to review previous transcriptions stored locally.
+
 ## Supported Targets
 
 - Linux native desktop app with Tauri v2 (Rust backend, native microphone recording on Linux)
