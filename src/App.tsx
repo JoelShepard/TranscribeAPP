@@ -137,6 +137,12 @@ export default function App() {
   };
 
   const handleSettingsKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setShowSettings(false);
+      return;
+    }
+
     if (e.ctrlKey && e.key === 'Enter') {
       e.preventDefault();
       saveSettings();
