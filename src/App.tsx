@@ -15,6 +15,11 @@ import {
   formatNativeMicrophoneError,
 } from './constants/messages';
 import { type ProcessingSource, type ResultMetadata, type Status } from './types';
+import {
+  AUDIO_FILE_INPUT_ACCEPT,
+  isSupportedAudioFile,
+  SUPPORTED_AUDIO_FORMATS_LABEL,
+} from './utils/audioFormats';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -189,6 +194,13 @@ export default function App() {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
+
+    if (!isSupportedAudioFile(file)) {
+      setError(ERROR_MESSAGES.invalidAudioFile);
+      setStatus('error');
+      return;
+    }
+
     await processAudio(file, 'upload');
   };
 
@@ -201,7 +213,7 @@ export default function App() {
       return;
     }
 
-    if (!file.type.startsWith('audio/')) {
+    if (!isSupportedAudioFile(file)) {
       setError(ERROR_MESSAGES.invalidAudioFile);
       setStatus('error');
       return;
@@ -783,13 +795,13 @@ export default function App() {
                     )}
                     aria-label="Upload audio file"
                 >
-                    <input ref={fileInputRef} type="file" accept="audio/*" onChange={handleFileUpload} className="hidden" />
+                    <input ref={fileInputRef} type="file" accept={AUDIO_FILE_INPUT_ACCEPT} onChange={handleFileUpload} className="hidden" />
                     <div className="w-16 h-16 bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] rounded-3xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                         <FileAudio className="w-8 h-8" />
                     </div>
                     <h3 className="text-xl font-extrabold text-[var(--md-sys-color-on-surface)]">Upload Audio</h3>
                     <p className="text-[var(--md-sys-color-on-surface-variant)] text-center mt-2 text-sm">
-                      {isDragOver ? 'Drop your audio file here' : 'Click or drag and drop (MP3, WAV, M4A, OGG)'}
+                      {isDragOver ? 'Drop your audio file here' : `Click or drag and drop (${SUPPORTED_AUDIO_FORMATS_LABEL})`}
                     </p>
                 </div>
 

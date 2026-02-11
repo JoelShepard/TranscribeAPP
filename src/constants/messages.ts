@@ -1,7 +1,7 @@
 export const ERROR_MESSAGES = {
   unknownError: 'Unknown error',
   noErrorDetails: 'No details',
-  invalidAudioFile: 'Please drop a valid audio file.',
+  invalidAudioFile: 'Unsupported audio format. Please use WAV, MP3, M4A, or OGG.',
   nativeMicrophonePrefix: 'Native microphone error',
   recordingNotSupported:
     'Recording is not supported in this environment. Use Upload Audio as fallback.',
