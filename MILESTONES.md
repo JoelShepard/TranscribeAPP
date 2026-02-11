@@ -36,7 +36,7 @@ Track important project goals here. Mark items as completed only when fully veri
 - [x] **CI**: Add a linting script to `package.json` and a CI step for `bun run lint`.
 - [x] **Docs**: Update `README.md` with new screenshots and "How to use" section.
 - [x] **Docs**: Create `CONTRIBUTING.md` with development guidelines.
-- [ ] **Android**: Verify and update adaptive icons for Android build.
+- [x] **Android**: Verify and update adaptive icons for Android build.
 - [ ] **Android**: Create a branded splash screen for the Android app.
 - [ ] **Tauri**: Customize the native window menu (File, Edit, View) or hide it if unnecessary.
 - [ ] **Tauri**: Implement a basic system tray icon using Tauri API.
