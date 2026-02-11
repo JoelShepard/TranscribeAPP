@@ -32,7 +32,7 @@ Track important project goals here. Mark items as completed only when fully veri
 - [x] **UX**: Implement `Esc` shortcut to close the Settings modal.
 - [x] **UX**: Add visual feedback (checkmark) to the "Copy" button when clicked.
 - [x] **Refactor**: Extract hardcoded error messages to `src/constants/messages.ts`.
-- [ ] **Refactor**: Move TypeScript interfaces from `App.tsx` to `src/types/index.ts`.
+- [x] **Refactor**: Move TypeScript interfaces from `App.tsx` to `src/types/index.ts`.
 - [ ] **CI**: Add a linting script to `package.json` and a CI step for `bun run lint`.
 - [ ] **Docs**: Update `README.md` with new screenshots and "How to use" section.
 - [ ] **Docs**: Create `CONTRIBUTING.md` with development guidelines.

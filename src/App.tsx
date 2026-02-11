@@ -14,13 +14,11 @@ import {
   formatMicrophoneAccessError,
   formatNativeMicrophoneError,
 } from './constants/messages';
+import { type ProcessingSource, type ResultMetadata, type Status } from './types';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-
-type Status = 'idle' | 'recording' | 'processing' | 'transcribing' | 'done' | 'error';
-type ProcessingSource = 'upload' | 'recording';
 
 const TRANSCRIPTION_MODELS = [
   { value: 'voxtral-mini-latest', label: 'voxtral-mini-latest (default)' },
@@ -29,15 +27,6 @@ const TRANSCRIPTION_MODELS = [
 ] as const;
 
 const DEFAULT_TRANSCRIPTION_MODEL = TRANSCRIPTION_MODELS[0].value;
-
-interface ResultMetadata {
-  fileName: string;
-  durationSeconds: number;
-  source: ProcessingSource;
-  transcriptionChars: number;
-  wordCount: number;
-  processedAt: string;
-}
 
 function isLinuxPlatform(): boolean {
   return typeof navigator !== 'undefined' && /linux/i.test(navigator.userAgent);
