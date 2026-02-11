@@ -44,5 +44,5 @@ Track important project goals here. Mark items as completed only when fully veri
 - [x] **Error Handling**: implementation of a global React Error Boundary.
 - [x] **Audio**: explicitly test and list supported formats (WAV, MP3, M4A, OGG) in the UI.
 - [x] **Analytics**: Add a simple local counter for "Total Files Transcribed".
-- [ ] **Cleanup**: Audit and remove unused imports across `src/`.
+- [x] **Cleanup**: Audit and remove unused imports across `src/`.
 - [ ] **Cleanup**: Run a full project formatting pass.

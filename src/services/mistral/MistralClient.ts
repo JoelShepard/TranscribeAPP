@@ -43,7 +43,7 @@ export class MistralClient {
         if (json.error && json.error.message) {
            errorMessage = json.error.message;
         }
-      } catch (e) { /* ignore */ }
+      } catch { /* ignore */ }
       
       throw new Error(errorMessage);
     }
