@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, FileAudio, Settings, Save, Copy, Loader2, StopCircle, Sun, Moon, AudioLines, ExternalLink } from 'lucide-react';
+import { Mic, FileAudio, Settings, Save, Copy, Loader2, StopCircle, Sun, Moon, AudioLines, ExternalLink, History, X, Trash2 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { invoke } from '@tauri-apps/api/core';
@@ -72,9 +72,10 @@ function getErrorDetails(err: unknown): string {
 
 export default function App() {
   const { theme, toggleTheme } = useTheme();
-  const { addHistoryItem } = useHistory();
+  const { history, addHistoryItem, clearHistory } = useHistory();
   const [apiKey, setApiKey] = useState('');
   const [showSettings, setShowSettings] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
   const [progress, setProgress] = useState('');
   const [transcription, setTranscription] = useState('');
@@ -349,6 +350,22 @@ export default function App() {
     a.click();
   };
 
+  const formatDuration = (seconds: number) => {
+    const safeSeconds = Math.max(0, Math.floor(seconds));
+    const minutes = Math.floor(safeSeconds / 60);
+    const remainingSeconds = safeSeconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const formatCreatedAt = (dateValue: string) => {
+    const parsed = new Date(dateValue);
+    if (Number.isNaN(parsed.getTime())) {
+      return 'Unknown date';
+    }
+
+    return parsed.toLocaleString();
+  };
+
   return (
     <div className={cn(
       "min-h-screen bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] transition-colors duration-200 relative overflow-x-hidden",
@@ -389,6 +406,13 @@ export default function App() {
                   aria-label="Toggle theme"
                 >
                   {theme === 'light' ? <Moon className="w-6 h-6" /> : <Sun className="w-6 h-6" />}
+                </button>
+                <button 
+                  onClick={() => setShowHistory(true)}
+                  className="p-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] transition-colors text-[var(--md-sys-color-on-surface-variant)]"
+                  aria-label="Open history"
+                >
+                  <History className="w-6 h-6" />
                 </button>
                 <button 
                   onClick={() => setShowSettings(!showSettings)}
@@ -461,6 +485,89 @@ export default function App() {
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
             </div>
+        </div>
+      )}
+
+      {showHistory && (
+        <div className="fixed inset-0 z-40 flex justify-end">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/35"
+            aria-label="Close history panel"
+            onClick={() => setShowHistory(false)}
+          />
+          <aside className="relative z-10 h-full w-full max-w-md bg-[var(--md-sys-color-surface)] shadow-[-14px_0_40px_rgba(16,20,36,0.28)] border-l border-[color:var(--md-sys-color-outline)]/25 flex flex-col animate-in slide-in-from-right-10 duration-200">
+            <div className="px-5 py-4 border-b border-[color:var(--md-sys-color-outline)]/20 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <History className="w-5 h-5 text-[var(--md-sys-color-primary)]" />
+                <h2 className="text-lg font-bold text-[var(--md-sys-color-on-surface)]">Transcription History</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowHistory(false)}
+                className="p-2 rounded-xl hover:bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)]"
+                aria-label="Close history"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="px-5 py-3 border-b border-[color:var(--md-sys-color-outline)]/20 flex justify-between items-center gap-3">
+              <p className="text-sm text-[var(--md-sys-color-on-surface-variant)]">
+                {history.length} {history.length === 1 ? 'item' : 'items'} saved locally
+              </p>
+              <button
+                type="button"
+                onClick={clearHistory}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] hover:opacity-90 disabled:opacity-50"
+                disabled={history.length === 0}
+              >
+                <Trash2 className="w-4 h-4" />
+                Clear
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              {history.length === 0 ? (
+                <div className="h-full flex items-center justify-center rounded-2xl border border-dashed border-[color:var(--md-sys-color-outline)]/40 text-center p-6">
+                  <p className="text-sm text-[var(--md-sys-color-on-surface-variant)]">
+                    No transcriptions yet. Upload or record audio to build your history.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {history.map((item) => (
+                    <article
+                      key={item.id}
+                      className="rounded-2xl border border-[color:var(--md-sys-color-outline)]/25 bg-[var(--md-sys-color-surface-container)] p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="font-semibold text-sm text-[var(--md-sys-color-on-surface)] break-all">{item.fileName}</h3>
+                        <span className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)]">
+                          {item.source === 'recording' ? 'Recording' : 'Upload'}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-xs text-[var(--md-sys-color-on-surface-variant)]">{formatCreatedAt(item.createdAt)}</p>
+                      <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                        <div className="rounded-xl bg-[var(--md-sys-color-surface)] px-2 py-1.5 border border-[color:var(--md-sys-color-outline)]/20">
+                          <p className="text-[var(--md-sys-color-on-surface-variant)]">Duration</p>
+                          <p className="font-semibold text-[var(--md-sys-color-on-surface)]">{formatDuration(item.durationSeconds)}</p>
+                        </div>
+                        <div className="rounded-xl bg-[var(--md-sys-color-surface)] px-2 py-1.5 border border-[color:var(--md-sys-color-outline)]/20">
+                          <p className="text-[var(--md-sys-color-on-surface-variant)]">Chars</p>
+                          <p className="font-semibold text-[var(--md-sys-color-on-surface)]">{item.transcriptionChars.toLocaleString()}</p>
+                        </div>
+                        <div className="rounded-xl bg-[var(--md-sys-color-surface)] px-2 py-1.5 border border-[color:var(--md-sys-color-outline)]/20">
+                          <p className="text-[var(--md-sys-color-on-surface-variant)]">Words</p>
+                          <p className="font-semibold text-[var(--md-sys-color-on-surface)]">{item.wordCount.toLocaleString()}</p>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
+          </aside>
         </div>
       )}
 
