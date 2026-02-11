@@ -35,7 +35,7 @@ Track important project goals here. Mark items as completed only when fully veri
 - [x] **Refactor**: Move TypeScript interfaces from `App.tsx` to `src/types/index.ts`.
 - [x] **CI**: Add a linting script to `package.json` and a CI step for `bun run lint`.
 - [x] **Docs**: Update `README.md` with new screenshots and "How to use" section.
-- [ ] **Docs**: Create `CONTRIBUTING.md` with development guidelines.
+- [x] **Docs**: Create `CONTRIBUTING.md` with development guidelines.
 - [ ] **Android**: Verify and update adaptive icons for Android build.
 - [ ] **Android**: Create a branded splash screen for the Android app.
 - [ ] **Tauri**: Customize the native window menu (File, Edit, View) or hide it if unnecessary.
