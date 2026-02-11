@@ -22,7 +22,7 @@ Track important project goals here. Mark items as completed only when fully veri
 - [x] **Tests**: Create `src/services/mistral/MistralClient.test.ts` with mocked fetch calls.
 - [x] **UI**: Add "Drag & Drop" zone to the file upload area in `App.tsx`.
 - [x] **UI**: Add a CSS-based audio visualizer (bars or wave) during recording state.
-- [ ] **Feature**: Implement `HistoryContext` to store transcription metadata in `localStorage`.
+- [x] **Feature**: Implement `HistoryContext` to store transcription metadata in `localStorage`.
 - [ ] **Feature**: Create a "History" sidebar/modal to list past transcriptions.
 - [ ] **Feature**: Add "Export to Markdown" button in the result view.
 - [ ] **Feature**: Add "Export to JSON" button (including metadata like date, duration).

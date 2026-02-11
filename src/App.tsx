@@ -6,6 +6,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { audioProcessor } from './services/audio/AudioProcessor';
 import { MistralClient } from './services/mistral/MistralClient';
 import { useTheme } from './context/ThemeContext';
+import { useHistory } from './context/HistoryContext';
 import { TitleBar } from './components/TitleBar';
 import { isTauriRuntime } from './utils/platform';
 
@@ -14,6 +15,7 @@ function cn(...inputs: ClassValue[]) {
 }
 
 type Status = 'idle' | 'recording' | 'processing' | 'transcribing' | 'done' | 'error';
+type ProcessingSource = 'upload' | 'recording';
 
 function isLinuxPlatform(): boolean {
   return typeof navigator !== 'undefined' && /linux/i.test(navigator.userAgent);
@@ -70,6 +72,7 @@ function getErrorDetails(err: unknown): string {
 
 export default function App() {
   const { theme, toggleTheme } = useTheme();
+  const { addHistoryItem } = useHistory();
   const [apiKey, setApiKey] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [status, setStatus] = useState<Status>('idle');
@@ -104,7 +107,7 @@ export default function App() {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
-    await processAudio(file);
+    await processAudio(file, 'upload');
   };
 
   const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
@@ -122,7 +125,7 @@ export default function App() {
       return;
     }
 
-    await processAudio(file);
+    await processAudio(file, 'upload');
   };
 
   const startRecording = async () => {
@@ -188,7 +191,7 @@ export default function App() {
         const file = new File([blob], `recording.${extension}`, { type: mimeType });
         mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
         mediaStreamRef.current = null;
-        await processAudio(file);
+        await processAudio(file, 'recording');
       };
 
       mediaRecorder.start();
@@ -215,7 +218,7 @@ export default function App() {
         const audioBytes = await invoke<number[]>('stop_native_recording');
         const audioData = Uint8Array.from(audioBytes);
         const file = new File([audioData], 'recording.wav', { type: 'audio/wav' });
-        await processAudio(file);
+        await processAudio(file, 'recording');
       } catch (err: unknown) {
         console.error('[App] Error stopping native recording:', err);
         setError(`Native microphone error: ${getErrorDetails(err)}`);
@@ -243,7 +246,7 @@ export default function App() {
     };
   }, []);
 
-  const processAudio = async (file: File) => {
+  const processAudio = async (file: File, source: ProcessingSource) => {
     console.log('[App] Starting processAudio for file:', file.name, 'size:', file.size, 'type:', file.type);
     
     if (!apiKey) {
@@ -300,6 +303,16 @@ export default function App() {
 
       const fullTranscription = results.join(' ');
       console.log('[App] Full transcription length:', fullTranscription.length, 'chars');
+      const wordCount = fullTranscription.trim().length > 0 ? fullTranscription.trim().split(/\s+/).length : 0;
+
+      addHistoryItem({
+        fileName: file.name,
+        durationSeconds: duration,
+        source,
+        transcriptionChars: fullTranscription.length,
+        wordCount,
+      });
+
       setTranscription(fullTranscription);
       setStatus('done');
       setProgress('');
