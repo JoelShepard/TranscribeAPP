@@ -12,7 +12,37 @@ Track important project goals here. Mark items as completed only when fully veri
 - [x] CI workflow added to run tests (`bun test`) on pull requests.
 - [x] Linux native Tauri microphone recording integrated via Rust backend.
 - [x] Repository cleaned to supported targets only (Android, Linux Tauri, Docker web app).
+- [x] Publish release artifacts (desktop binary) on GitHub Releases.
 
 ## Next
 
-- [x] Publish release artifacts (desktop binary) on GitHub Releases.
+- [x] **Tests**: Create `src/services/audio/AudioProcessor.test.ts` and scaffold tests for `getAudioDuration`.
+- [x] **Tests**: Implement unit tests for `splitAudio` logic in `AudioProcessor`.
+- [x] **Tests**: Implement unit tests for `normalizeAudio` in `AudioProcessor`.
+- [x] **Tests**: Create `src/services/mistral/MistralClient.test.ts` with mocked fetch calls.
+- [x] **UI**: Add "Drag & Drop" zone to the file upload area in `App.tsx`.
+- [x] **UI**: Add a CSS-based audio visualizer (bars or wave) during recording state.
+- [ ] **Feature**: Implement `HistoryContext` to store transcription metadata in `localStorage`.
+- [ ] **Feature**: Create a "History" sidebar/modal to list past transcriptions.
+- [ ] **Feature**: Add "Export to Markdown" button in the result view.
+- [ ] **Feature**: Add "Export to JSON" button (including metadata like date, duration).
+- [ ] **Settings**: Add model selection dropdown (e.g., `mistral-tiny`, `mistral-small`) to Settings.
+- [ ] **Settings**: Add source language input field (optional) for Mistral API.
+- [ ] **UX**: Implement `Ctrl+Enter` shortcut to save settings.
+- [ ] **UX**: Implement `Esc` shortcut to close the Settings modal.
+- [ ] **UX**: Add visual feedback (checkmark) to the "Copy" button when clicked.
+- [ ] **Refactor**: Extract hardcoded error messages to `src/constants/messages.ts`.
+- [ ] **Refactor**: Move TypeScript interfaces from `App.tsx` to `src/types/index.ts`.
+- [ ] **CI**: Add a linting script to `package.json` and a CI step for `bun run lint`.
+- [ ] **Docs**: Update `README.md` with new screenshots and "How to use" section.
+- [ ] **Docs**: Create `CONTRIBUTING.md` with development guidelines.
+- [ ] **Android**: Verify and update adaptive icons for Android build.
+- [ ] **Android**: Create a branded splash screen for the Android app.
+- [ ] **Tauri**: Customize the native window menu (File, Edit, View) or hide it if unnecessary.
+- [ ] **Tauri**: Implement a basic system tray icon using Tauri API.
+- [ ] **Performance**: Optimize `App.tsx` with `useMemo` for expensive renders.
+- [ ] **Error Handling**: implementation of a global React Error Boundary.
+- [ ] **Audio**: explicitly test and list supported formats (WAV, MP3, M4A, OGG) in the UI.
+- [ ] **Analytics**: Add a simple local counter for "Total Files Transcribed".
+- [ ] **Cleanup**: Audit and remove unused imports across `src/`.
+- [ ] **Cleanup**: Run a full project formatting pass.

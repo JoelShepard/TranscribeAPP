@@ -1,0 +1,26 @@
+{
+  "iterations": [
+    {
+      "iteration": 1,
+      "startedAt": "2026-02-11T22:32:15.863Z",
+      "endedAt": "2026-02-11T22:33:08.167Z",
+      "durationMs": 52025,
+      "toolsUsed": {},
+      "filesModified": [
+        "MILESTONES.md",
+        "src/App.tsx",
+        "src/index.css",
+        ".ralph/"
+      ],
+      "exitCode": 0,
+      "completionDetected": true,
+      "errors": []
+    }
+  ],
+  "totalDurationMs": 52025,
+  "struggleIndicators": {
+    "repeatedErrors": {},
+    "noProgressIterations": 0,
+    "shortIterations": 0
+  }
+}

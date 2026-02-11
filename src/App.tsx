@@ -78,12 +78,14 @@ export default function App() {
   const [error, setError] = useState('');
   const [tauriEnv, setTauriEnv] = useState(() => isTauriRuntime());
   const [linuxEnv, setLinuxEnv] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   
   // Recording refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const mediaMimeTypeRef = useRef('audio/webm');
   const chunksRef = useRef<Blob[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setTauriEnv(isTauriRuntime());
@@ -101,6 +103,25 @@ export default function App() {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    e.target.value = '';
+    await processAudio(file);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith('audio/')) {
+      setError('Please drop a valid audio file.');
+      setStatus('error');
+      return;
+    }
+
     await processAudio(file);
   };
 
@@ -443,14 +464,37 @@ export default function App() {
         {status === 'idle' || status === 'error' ? (
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Upload */}
-                <label className="group bg-[var(--md-sys-color-surface-container)] p-8 rounded-[28px] shadow-[0_4px_18px_rgba(27,34,57,0.10)] border border-[color:var(--md-sys-color-outline)]/30 hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(39,80,196,0.22)] transition-all cursor-pointer flex flex-col items-center justify-center h-64">
-                    <input type="file" accept="audio/*" onChange={handleFileUpload} className="hidden" />
+                <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => fileInputRef.current?.click()}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        fileInputRef.current?.click();
+                      }
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragOver(true);
+                    }}
+                    onDragLeave={() => setIsDragOver(false)}
+                    onDrop={handleDrop}
+                    className={cn(
+                      'group bg-[var(--md-sys-color-surface-container)] p-8 rounded-[28px] shadow-[0_4px_18px_rgba(27,34,57,0.10)] border border-[color:var(--md-sys-color-outline)]/30 hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(39,80,196,0.22)] transition-all cursor-pointer flex flex-col items-center justify-center h-64 outline-none',
+                      isDragOver && 'ring-4 ring-[var(--md-sys-color-primary)]/35 border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/25'
+                    )}
+                    aria-label="Upload audio file"
+                >
+                    <input ref={fileInputRef} type="file" accept="audio/*" onChange={handleFileUpload} className="hidden" />
                     <div className="w-16 h-16 bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] rounded-3xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                         <FileAudio className="w-8 h-8" />
                     </div>
                     <h3 className="text-xl font-extrabold text-[var(--md-sys-color-on-surface)]">Upload Audio</h3>
-                    <p className="text-[var(--md-sys-color-on-surface-variant)] text-center mt-2 text-sm">MP3, WAV, M4A, OGG</p>
-                </label>
+                    <p className="text-[var(--md-sys-color-on-surface-variant)] text-center mt-2 text-sm">
+                      {isDragOver ? 'Drop your audio file here' : 'Click or drag and drop (MP3, WAV, M4A, OGG)'}
+                    </p>
+                </div>
 
                 {/* Record */}
                 <button 
@@ -468,12 +512,21 @@ export default function App() {
 
         {/* Recording State */}
         {status === 'recording' && (
-            <div className="flex flex-col items-center justify-center py-12 bg-[var(--md-sys-color-surface-container)] rounded-[32px] shadow-[0_8px_24px_rgba(60,20,31,0.18)] border border-rose-300/30 animate-pulse">
+            <div className="flex flex-col items-center justify-center py-12 bg-[var(--md-sys-color-surface-container)] rounded-[32px] shadow-[0_8px_24px_rgba(60,20,31,0.18)] border border-rose-300/30">
                 <div className="w-20 h-20 bg-rose-600 rounded-[24px] flex items-center justify-center mb-6 shadow-lg shadow-rose-300/40 dark:shadow-none">
                     <Mic className="w-10 h-10 text-white" />
                 </div>
                 <h2 className="text-2xl font-extrabold text-[var(--md-sys-color-on-surface)] mb-2">Recording...</h2>
                 <p className="text-[var(--md-sys-color-on-surface-variant)] mb-8">Speak clearly into the microphone</p>
+                <div className="audio-visualizer mb-8" aria-hidden="true">
+                  {[0, 1, 2, 3, 4, 5, 6, 7].map((bar) => (
+                    <span
+                      key={bar}
+                      className="audio-visualizer-bar"
+                      style={{ animationDelay: `${bar * 0.11}s` }}
+                    />
+                  ))}
+                </div>
                 <button 
                     onClick={stopRecording}
                     className="bg-rose-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-rose-700 flex items-center gap-2 shadow-md transition-all hover:scale-105"

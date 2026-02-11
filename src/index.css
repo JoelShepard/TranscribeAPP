@@ -49,3 +49,36 @@
 body {
   font-family: "Nunito Sans", "Segoe UI", sans-serif;
 }
+
+.audio-visualizer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.45rem;
+  height: 3rem;
+}
+
+.audio-visualizer-bar {
+  width: 0.4rem;
+  height: 0.75rem;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #fb7185 0%, #e11d48 100%);
+  transform-origin: center bottom;
+  animation: visualizer-pulse 0.9s ease-in-out infinite;
+}
+
+.dark .audio-visualizer-bar {
+  background: linear-gradient(180deg, #fda4af 0%, #fb7185 100%);
+}
+
+@keyframes visualizer-pulse {
+  0%,
+  100% {
+    transform: scaleY(0.45);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scaleY(1.8);
+    opacity: 1;
+  }
+}
