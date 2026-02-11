@@ -32,6 +32,7 @@ const TRANSCRIPTION_MODELS = [
 ] as const;
 
 const DEFAULT_TRANSCRIPTION_MODEL = TRANSCRIPTION_MODELS[0].value;
+const TOTAL_FILES_STORAGE_KEY = 'transcription_total_files';
 
 function isLinuxPlatform(): boolean {
   return typeof navigator !== 'undefined' && /linux/i.test(navigator.userAgent);
@@ -102,6 +103,19 @@ function formatCreatedAt(dateValue: string): string {
   return parsed.toLocaleString();
 }
 
+function parseStoredTotalFiles(rawValue: string | null): number {
+  if (!rawValue) {
+    return 0;
+  }
+
+  const parsed = Number.parseInt(rawValue, 10);
+  if (Number.isNaN(parsed) || parsed < 0) {
+    return 0;
+  }
+
+  return parsed;
+}
+
 export default function App() {
   const { theme, toggleTheme } = useTheme();
   const { history, addHistoryItem, clearHistory } = useHistory();
@@ -119,6 +133,13 @@ export default function App() {
   const [linuxEnv, setLinuxEnv] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [totalFilesTranscribed, setTotalFilesTranscribed] = useState<number>(() => {
+    if (typeof window === 'undefined') {
+      return 0;
+    }
+
+    return parseStoredTotalFiles(localStorage.getItem(TOTAL_FILES_STORAGE_KEY));
+  });
   
   // Recording refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -151,6 +172,10 @@ export default function App() {
       }),
     [history],
   );
+  const totalFilesTranscribedText = useMemo(
+    () => `${totalFilesTranscribed.toLocaleString()} ${totalFilesTranscribed === 1 ? 'file' : 'files'} transcribed`,
+    [totalFilesTranscribed],
+  );
 
   useEffect(() => {
     setTauriEnv(isTauriRuntime());
@@ -169,6 +194,10 @@ export default function App() {
       setSourceLanguage(storedSourceLanguage);
     }
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(TOTAL_FILES_STORAGE_KEY, String(totalFilesTranscribed));
+  }, [totalFilesTranscribed]);
 
   const saveSettings = () => {
     localStorage.setItem('mistral_api_key', apiKey);
@@ -412,6 +441,7 @@ export default function App() {
         transcriptionChars: fullTranscription.length,
         wordCount,
       });
+      setTotalFilesTranscribed((current) => current + 1);
 
       setResultMetadata({
         fileName: file.name,
@@ -704,6 +734,9 @@ export default function App() {
             <div className="px-5 py-3 border-b border-[color:var(--md-sys-color-outline)]/20 flex justify-between items-center gap-3">
               <p className="text-sm text-[var(--md-sys-color-on-surface-variant)]">
                 {historyCountText}
+              </p>
+              <p className="text-sm font-semibold text-[var(--md-sys-color-on-surface)]">
+                {totalFilesTranscribedText}
               </p>
               <button
                 type="button"

@@ -43,6 +43,6 @@ Track important project goals here. Mark items as completed only when fully veri
 - [x] **Performance**: Optimize `App.tsx` with `useMemo` for expensive renders.
 - [x] **Error Handling**: implementation of a global React Error Boundary.
 - [x] **Audio**: explicitly test and list supported formats (WAV, MP3, M4A, OGG) in the UI.
-- [ ] **Analytics**: Add a simple local counter for "Total Files Transcribed".
+- [x] **Analytics**: Add a simple local counter for "Total Files Transcribed".
 - [ ] **Cleanup**: Audit and remove unused imports across `src/`.
 - [ ] **Cleanup**: Run a full project formatting pass.
