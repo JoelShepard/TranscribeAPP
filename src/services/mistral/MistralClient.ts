@@ -18,6 +18,30 @@ export class MistralClient {
         : undefined;
   }
 
+  async validateApiKey(): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/models`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${this.apiKey}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = `HTTP ${response.status}: ${errorText}`;
+      try {
+        const json = JSON.parse(errorText);
+        if (json.error && json.error.message) {
+          errorMessage = json.error.message;
+        }
+      } catch {
+        // Ignore parse errors.
+      }
+
+      throw new Error(errorMessage);
+    }
+  }
+
   async transcribe(audioBlob: Blob): Promise<string> {
     console.log(
       "[MistralClient] Starting transcription, blob size:",

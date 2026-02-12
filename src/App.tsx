@@ -12,6 +12,7 @@ import {
   Moon,
   AudioLines,
   ExternalLink,
+  CheckCircle2,
   History,
   X,
   Trash2,
@@ -161,6 +162,8 @@ export default function App() {
   const [error, setError] = useState("");
   const [tauriEnv, setTauriEnv] = useState(() => isTauriRuntime());
   const [linuxEnv, setLinuxEnv] = useState(false);
+  const [isApiKeyVerified, setIsApiKeyVerified] = useState(false);
+  const [isSavingApiKey, setIsSavingApiKey] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [totalFilesTranscribed, setTotalFilesTranscribed] = useState<number>(
@@ -217,12 +220,18 @@ export default function App() {
       `${totalFilesTranscribed.toLocaleString()} ${totalFilesTranscribed === 1 ? "file" : "files"} transcribed`,
     [totalFilesTranscribed],
   );
+  const hasVerifiedApiKey = isApiKeyVerified;
 
   useEffect(() => {
     setTauriEnv(isTauriRuntime());
     setLinuxEnv(isLinuxPlatform());
     const storedKey = localStorage.getItem("mistral_api_key");
-    if (storedKey) setApiKey(storedKey);
+    const storedVerified =
+      localStorage.getItem("mistral_api_key_verified") === "true";
+    if (storedKey) {
+      setApiKey(storedKey);
+      setIsApiKeyVerified(storedVerified);
+    }
     const storedModel = localStorage.getItem("mistral_model");
     if (storedModel) {
       const matchingModel = TRANSCRIPTION_MODELS.find(
@@ -247,11 +256,46 @@ export default function App() {
     );
   }, [totalFilesTranscribed]);
 
-  const saveSettings = () => {
-    localStorage.setItem("mistral_api_key", apiKey);
-    localStorage.setItem("mistral_model", transcriptionModel);
-    localStorage.setItem("mistral_source_language", sourceLanguage.trim());
-    setShowSettings(false);
+  const saveSettings = async () => {
+    const trimmedApiKey = apiKey.trim();
+    if (!trimmedApiKey) {
+      setError("Please enter a Mistral API Key before saving.");
+      return;
+    }
+
+    try {
+      setError("");
+      setIsSavingApiKey(true);
+      const client = new MistralClient(
+        trimmedApiKey,
+        transcriptionModel,
+        sourceLanguage,
+      );
+      await client.validateApiKey();
+
+      localStorage.setItem("mistral_api_key", trimmedApiKey);
+      localStorage.setItem("mistral_model", transcriptionModel);
+      localStorage.setItem("mistral_source_language", sourceLanguage.trim());
+      localStorage.setItem("mistral_api_key_verified", "true");
+      setApiKey(trimmedApiKey);
+      setIsApiKeyVerified(true);
+    } catch (err: unknown) {
+      console.error("[App] API key validation failed:", err);
+      localStorage.removeItem("mistral_api_key_verified");
+      setIsApiKeyVerified(false);
+      setError("Invalid API Key. Please check it and try again.");
+      setShowSettings(true);
+    } finally {
+      setIsSavingApiKey(false);
+    }
+  };
+
+  const handleApiKeyChange = (value: string) => {
+    setApiKey(value);
+    if (isApiKeyVerified) {
+      setIsApiKeyVerified(false);
+      localStorage.removeItem("mistral_api_key_verified");
+    }
   };
 
   const handleSettingsKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -263,7 +307,7 @@ export default function App() {
 
     if (e.ctrlKey && e.key === "Enter") {
       e.preventDefault();
-      saveSettings();
+      void saveSettings();
     }
   };
 
@@ -443,6 +487,7 @@ export default function App() {
     if (!apiKey) {
       console.error("[App] No API key set");
       setError(ERROR_MESSAGES.missingApiKey);
+      setIsApiKeyVerified(false);
       setShowSettings(true);
       return;
     }
@@ -549,6 +594,8 @@ export default function App() {
         errorMessage.toLowerCase().includes("unauthorized")
       ) {
         errorMessage = ERROR_MESSAGES.invalidApiKey;
+        setIsApiKeyVerified(false);
+        localStorage.removeItem("mistral_api_key_verified");
         setShowSettings(true); // Auto-open settings
       }
 
@@ -688,6 +735,17 @@ export default function App() {
 
             const actionsContent = (
               <div className="flex items-center gap-2">
+                {!hasVerifiedApiKey && (
+                  <a
+                    href="https://console.mistral.ai/api-keys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-2xl bg-[var(--md-sys-color-secondary-container)] px-3.5 py-2.5 text-sm font-bold text-[var(--md-sys-color-on-secondary-container)] hover:opacity-90 transition-opacity"
+                  >
+                    Get API Key
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                )}
                 <button
                   onClick={toggleTheme}
                   className="p-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] transition-colors text-[var(--md-sys-color-on-surface-variant)]"
@@ -708,10 +766,19 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => setShowSettings(!showSettings)}
-                  className="p-2.5 rounded-2xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] hover:opacity-90 transition-colors"
+                  className={cn(
+                    "p-2.5 rounded-2xl bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] hover:opacity-90 transition-colors",
+                    showSettings &&
+                      "shadow-[0_0_0_2px_color-mix(in_oklab,var(--md-sys-color-primary)_35%,transparent)]",
+                  )}
                   aria-label="Settings"
                 >
-                  <Settings className="w-6 h-6" />
+                  <Settings
+                    className={cn(
+                      "w-6 h-6 transition-transform duration-200",
+                      showSettings && "rotate-90",
+                    )}
+                  />
                 </button>
               </div>
             );
@@ -754,77 +821,76 @@ export default function App() {
               </div>
             );
           })()}
+
+          {showSettings && (
+            <div
+              onKeyDown={handleSettingsKeyDown}
+              className="mt-3 rounded-[30px] border border-[color:var(--md-sys-color-outline)]/30 bg-[var(--md-sys-color-surface-container)] p-6 animate-in slide-in-from-top-2 shadow-[0_8px_28px_rgba(22,27,45,0.10)] dark:shadow-[0_8px_28px_rgba(0,0,0,0.25)]"
+            >
+              <div className="max-w-2xl mx-auto">
+                <label className="block text-base font-semibold text-[var(--md-sys-color-on-surface)] mb-2">
+                  Mistral API Key
+                </label>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                  <div className="relative min-w-0">
+                    <input
+                      type="password"
+                      value={apiKey}
+                      onChange={(e) => handleApiKeyChange(e.target.value)}
+                      placeholder="Enter your API Key"
+                      className="w-full p-3.5 pr-11 rounded-2xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/50 outline-none"
+                    />
+                    {isSavingApiKey && (
+                      <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 animate-spin text-[var(--md-sys-color-on-surface-variant)]" />
+                    )}
+                    {!isSavingApiKey && isApiKeyVerified && (
+                      <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
+                    )}
+                  </div>
+                  <button
+                    onClick={() => void saveSettings()}
+                    disabled={isSavingApiKey}
+                    className="shrink-0 min-w-[9.25rem] bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] px-7 py-3 rounded-2xl hover:opacity-90 font-bold disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {isSavingApiKey ? "Checking..." : "Save"}
+                  </button>
+                </div>
+                <div className="mt-4">
+                  <label className="block text-base font-semibold text-[var(--md-sys-color-on-surface)] mb-2">
+                    Transcription Model
+                  </label>
+                  <select
+                    value={transcriptionModel}
+                    onChange={(e) => setTranscriptionModel(e.target.value)}
+                    className="w-full p-3.5 rounded-2xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/50 outline-none"
+                  >
+                    {TRANSCRIPTION_MODELS.map((model) => (
+                      <option key={model.value} value={model.value}>
+                        {model.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mt-4">
+                  <label className="block text-base font-semibold text-[var(--md-sys-color-on-surface)] mb-2">
+                    Source Language (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={sourceLanguage}
+                    onChange={(e) => setSourceLanguage(e.target.value)}
+                    placeholder="Auto-detect (e.g. en, it, fr)"
+                    className="w-full p-3.5 rounded-2xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/50 outline-none"
+                  />
+                </div>
+                <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-3">
+                  Key is stored locally on your device.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </header>
-
-      {/* Settings Modal/Area */}
-      {showSettings && (
-        <div
-          onKeyDown={handleSettingsKeyDown}
-          className="mx-6 max-w-4xl md:mx-auto mb-2 rounded-[30px] border border-[color:var(--md-sys-color-outline)]/30 bg-[var(--md-sys-color-surface-container)] p-6 animate-in slide-in-from-top-2 shadow-[0_8px_28px_rgba(22,27,45,0.10)] dark:shadow-[0_8px_28px_rgba(0,0,0,0.25)]"
-        >
-          <div className="max-w-2xl mx-auto">
-            <label className="block text-base font-semibold text-[var(--md-sys-color-on-surface)] mb-2">
-              Mistral API Key
-            </label>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="Enter your API Key"
-                className="flex-1 p-3.5 rounded-2xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/50 outline-none"
-              />
-              <button
-                onClick={saveSettings}
-                className="bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] px-7 py-3 rounded-2xl hover:opacity-90 font-bold"
-              >
-                Save
-              </button>
-            </div>
-            <div className="mt-4">
-              <label className="block text-base font-semibold text-[var(--md-sys-color-on-surface)] mb-2">
-                Transcription Model
-              </label>
-              <select
-                value={transcriptionModel}
-                onChange={(e) => setTranscriptionModel(e.target.value)}
-                className="w-full p-3.5 rounded-2xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/50 outline-none"
-              >
-                {TRANSCRIPTION_MODELS.map((model) => (
-                  <option key={model.value} value={model.value}>
-                    {model.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="mt-4">
-              <label className="block text-base font-semibold text-[var(--md-sys-color-on-surface)] mb-2">
-                Source Language (optional)
-              </label>
-              <input
-                type="text"
-                value={sourceLanguage}
-                onChange={(e) => setSourceLanguage(e.target.value)}
-                placeholder="Auto-detect (e.g. en, it, fr)"
-                className="w-full p-3.5 rounded-2xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/50 outline-none"
-              />
-            </div>
-            <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-3">
-              Key is stored locally on your device.
-            </p>
-            <a
-              href="https://console.mistral.ai/api-keys"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-[var(--md-sys-color-primary)] underline underline-offset-2 hover:opacity-85"
-            >
-              Create a new API key on Mistral
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
-          </div>
-        </div>
-      )}
 
       {showHistory && (
         <div className="fixed inset-0 z-40 flex justify-end">
