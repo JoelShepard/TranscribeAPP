@@ -2,16 +2,6 @@
 
 TranscribeJS is an audio transcription app powered by Mistral AI, built with React, TypeScript, and Bun.
 
-## Screenshots
-
-### Desktop (Web)
-
-![TranscribeJS desktop home screen](docs/screenshots/web-desktop-home.png)
-
-### Mobile (Web)
-
-![TranscribeJS mobile home screen](docs/screenshots/web-mobile-home.png)
-
 ## How To Use
 
 1. Open the app (`bun run dev` for web or `bun run dev:tauri` for desktop).
