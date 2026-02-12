@@ -13,9 +13,6 @@ import {
   AudioLines,
   ExternalLink,
   CheckCircle2,
-  History,
-  X,
-  Trash2,
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -23,7 +20,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { audioProcessor } from "./services/audio/AudioProcessor";
 import { MistralClient } from "./services/mistral/MistralClient";
 import { useTheme } from "./context/ThemeContext";
-import { useHistory } from "./context/HistoryContext";
 import { TitleBar } from "./components/TitleBar";
 import { isTauriRuntime } from "./utils/platform";
 import {
@@ -45,15 +41,6 @@ import {
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-
-const TRANSCRIPTION_MODELS = [
-  { value: "voxtral-mini-latest", label: "voxtral-mini-latest (default)" },
-  { value: "mistral-small", label: "mistral-small" },
-  { value: "mistral-tiny", label: "mistral-tiny" },
-] as const;
-
-const DEFAULT_TRANSCRIPTION_MODEL = TRANSCRIPTION_MODELS[0].value;
-const TOTAL_FILES_STORAGE_KEY = "transcription_total_files";
 
 function isLinuxPlatform(): boolean {
   return typeof navigator !== "undefined" && /linux/i.test(navigator.userAgent);
@@ -121,38 +108,10 @@ function formatDuration(seconds: number): string {
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
-function formatCreatedAt(dateValue: string): string {
-  const parsed = new Date(dateValue);
-  if (Number.isNaN(parsed.getTime())) {
-    return "Unknown date";
-  }
-
-  return parsed.toLocaleString();
-}
-
-function parseStoredTotalFiles(rawValue: string | null): number {
-  if (!rawValue) {
-    return 0;
-  }
-
-  const parsed = Number.parseInt(rawValue, 10);
-  if (Number.isNaN(parsed) || parsed < 0) {
-    return 0;
-  }
-
-  return parsed;
-}
-
 export default function App() {
   const { theme, toggleTheme } = useTheme();
-  const { history, addHistoryItem, clearHistory } = useHistory();
   const [apiKey, setApiKey] = useState("");
-  const [transcriptionModel, setTranscriptionModel] = useState<string>(
-    DEFAULT_TRANSCRIPTION_MODEL,
-  );
-  const [sourceLanguage, setSourceLanguage] = useState("");
   const [showSettings, setShowSettings] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [progress, setProgress] = useState("");
   const [transcription, setTranscription] = useState("");
@@ -166,17 +125,6 @@ export default function App() {
   const [isSavingApiKey, setIsSavingApiKey] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-  const [totalFilesTranscribed, setTotalFilesTranscribed] = useState<number>(
-    () => {
-      if (typeof window === "undefined") {
-        return 0;
-      }
-
-      return parseStoredTotalFiles(
-        localStorage.getItem(TOTAL_FILES_STORAGE_KEY),
-      );
-    },
-  );
 
   // Recording refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -192,34 +140,6 @@ export default function App() {
     () => Array.from({ length: 8 }, (_, index) => index),
     [],
   );
-  const historyCountText = useMemo(
-    () =>
-      `${history.length} ${history.length === 1 ? "item" : "items"} saved locally`,
-    [history.length],
-  );
-  const historyList = useMemo(
-    () =>
-      history.map((item) => {
-        const createdAtLabel = formatCreatedAt(item.createdAt);
-        const durationLabel = formatDuration(item.durationSeconds);
-        const charsLabel = item.transcriptionChars.toLocaleString();
-        const wordsLabel = item.wordCount.toLocaleString();
-
-        return {
-          ...item,
-          createdAtLabel,
-          durationLabel,
-          charsLabel,
-          wordsLabel,
-        };
-      }),
-    [history],
-  );
-  const totalFilesTranscribedText = useMemo(
-    () =>
-      `${totalFilesTranscribed.toLocaleString()} ${totalFilesTranscribed === 1 ? "file" : "files"} transcribed`,
-    [totalFilesTranscribed],
-  );
   const hasVerifiedApiKey = isApiKeyVerified;
 
   useEffect(() => {
@@ -232,29 +152,7 @@ export default function App() {
       setApiKey(storedKey);
       setIsApiKeyVerified(storedVerified);
     }
-    const storedModel = localStorage.getItem("mistral_model");
-    if (storedModel) {
-      const matchingModel = TRANSCRIPTION_MODELS.find(
-        (model) => model.value === storedModel,
-      );
-      if (matchingModel) {
-        setTranscriptionModel(matchingModel.value);
-      }
-    }
-    const storedSourceLanguage = localStorage.getItem(
-      "mistral_source_language",
-    );
-    if (storedSourceLanguage) {
-      setSourceLanguage(storedSourceLanguage);
-    }
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem(
-      TOTAL_FILES_STORAGE_KEY,
-      String(totalFilesTranscribed),
-    );
-  }, [totalFilesTranscribed]);
 
   const saveSettings = async () => {
     const trimmedApiKey = apiKey.trim();
@@ -266,16 +164,10 @@ export default function App() {
     try {
       setError("");
       setIsSavingApiKey(true);
-      const client = new MistralClient(
-        trimmedApiKey,
-        transcriptionModel,
-        sourceLanguage,
-      );
+      const client = new MistralClient(trimmedApiKey);
       await client.validateApiKey();
 
       localStorage.setItem("mistral_api_key", trimmedApiKey);
-      localStorage.setItem("mistral_model", transcriptionModel);
-      localStorage.setItem("mistral_source_language", sourceLanguage.trim());
       localStorage.setItem("mistral_api_key_verified", "true");
       setApiKey(trimmedApiKey);
       setIsApiKeyVerified(true);
@@ -505,11 +397,7 @@ export default function App() {
       const duration = await audioProcessor.getAudioDuration(file);
       console.log(`[App] Audio Duration: ${duration}s`);
 
-      const client = new MistralClient(
-        apiKey,
-        transcriptionModel,
-        sourceLanguage,
-      );
+      const client = new MistralClient(apiKey);
       let results: string[] = [];
 
       // Thresholds: 15 mins (900s) or 25MB (approx check)
@@ -559,15 +447,6 @@ export default function App() {
           ? fullTranscription.trim().split(/\s+/).length
           : 0;
       const processedAt = new Date().toISOString();
-
-      addHistoryItem({
-        fileName: file.name,
-        durationSeconds: duration,
-        source,
-        transcriptionChars: fullTranscription.length,
-        wordCount,
-      });
-      setTotalFilesTranscribed((current) => current + 1);
 
       setResultMetadata({
         fileName: file.name,
@@ -628,66 +507,6 @@ export default function App() {
     const a = document.createElement("a");
     a.href = url;
     a.download = "transcription.txt";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const exportToMarkdown = () => {
-    const markdown = [
-      "# Transcription Result",
-      "",
-      `Generated: ${new Date().toLocaleString()}`,
-      "",
-      "## Transcript",
-      "",
-      transcription || "_No transcription available._",
-      "",
-    ].join("\n");
-
-    const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "transcription.md";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const exportToJson = () => {
-    const exportDate = new Date().toISOString();
-    const metadata = resultMetadata
-      ? {
-          ...resultMetadata,
-          durationFormatted: formatDuration(resultMetadata.durationSeconds),
-        }
-      : {
-          fileName: "unknown",
-          durationSeconds: 0,
-          durationFormatted: formatDuration(0),
-          source: "upload" as ProcessingSource,
-          transcriptionChars: transcription.length,
-          wordCount:
-            transcription.trim().length > 0
-              ? transcription.trim().split(/\s+/).length
-              : 0,
-          processedAt: exportDate,
-        };
-
-    const payload = {
-      metadata: {
-        ...metadata,
-        exportedAt: exportDate,
-      },
-      transcript: transcription,
-    };
-
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: "application/json;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "transcription.json";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -756,13 +575,6 @@ export default function App() {
                   ) : (
                     <Sun className="w-6 h-6" />
                   )}
-                </button>
-                <button
-                  onClick={() => setShowHistory(true)}
-                  className="p-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] transition-colors text-[var(--md-sys-color-on-surface-variant)]"
-                  aria-label="Open history"
-                >
-                  <History className="w-6 h-6" />
                 </button>
                 <button
                   onClick={() => setShowSettings(!showSettings)}
@@ -855,34 +667,6 @@ export default function App() {
                     {isSavingApiKey ? "Checking..." : "Save"}
                   </button>
                 </div>
-                <div className="mt-4">
-                  <label className="block text-base font-semibold text-[var(--md-sys-color-on-surface)] mb-2">
-                    Transcription Model
-                  </label>
-                  <select
-                    value={transcriptionModel}
-                    onChange={(e) => setTranscriptionModel(e.target.value)}
-                    className="w-full p-3.5 rounded-2xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/50 outline-none"
-                  >
-                    {TRANSCRIPTION_MODELS.map((model) => (
-                      <option key={model.value} value={model.value}>
-                        {model.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="mt-4">
-                  <label className="block text-base font-semibold text-[var(--md-sys-color-on-surface)] mb-2">
-                    Source Language (optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={sourceLanguage}
-                    onChange={(e) => setSourceLanguage(e.target.value)}
-                    placeholder="Auto-detect (e.g. en, it, fr)"
-                    className="w-full p-3.5 rounded-2xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/50 outline-none"
-                  />
-                </div>
                 <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-3">
                   Key is stored locally on your device.
                 </p>
@@ -891,111 +675,6 @@ export default function App() {
           )}
         </div>
       </header>
-
-      {showHistory && (
-        <div className="fixed inset-0 z-40 flex justify-end">
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/35"
-            aria-label="Close history panel"
-            onClick={() => setShowHistory(false)}
-          />
-          <aside className="relative z-10 h-full w-full max-w-md bg-[var(--md-sys-color-surface)] shadow-[-14px_0_40px_rgba(16,20,36,0.28)] border-l border-[color:var(--md-sys-color-outline)]/25 flex flex-col animate-in slide-in-from-right-10 duration-200">
-            <div className="px-5 py-4 border-b border-[color:var(--md-sys-color-outline)]/20 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <History className="w-5 h-5 text-[var(--md-sys-color-primary)]" />
-                <h2 className="text-lg font-bold text-[var(--md-sys-color-on-surface)]">
-                  Transcription History
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowHistory(false)}
-                className="p-2 rounded-xl hover:bg-[var(--md-sys-color-surface-container)] text-[var(--md-sys-color-on-surface-variant)]"
-                aria-label="Close history"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="px-5 py-3 border-b border-[color:var(--md-sys-color-outline)]/20 flex justify-between items-center gap-3">
-              <p className="text-sm text-[var(--md-sys-color-on-surface-variant)]">
-                {historyCountText}
-              </p>
-              <p className="text-sm font-semibold text-[var(--md-sys-color-on-surface)]">
-                {totalFilesTranscribedText}
-              </p>
-              <button
-                type="button"
-                onClick={clearHistory}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-semibold bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] hover:opacity-90 disabled:opacity-50"
-                disabled={history.length === 0}
-              >
-                <Trash2 className="w-4 h-4" />
-                Clear
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-4 py-4">
-              {history.length === 0 ? (
-                <div className="h-full flex items-center justify-center rounded-2xl border border-dashed border-[color:var(--md-sys-color-outline)]/40 text-center p-6">
-                  <p className="text-sm text-[var(--md-sys-color-on-surface-variant)]">
-                    No transcriptions yet. Upload or record audio to build your
-                    history.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {historyList.map((item) => (
-                    <article
-                      key={item.id}
-                      className="rounded-2xl border border-[color:var(--md-sys-color-outline)]/25 bg-[var(--md-sys-color-surface-container)] p-4"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <h3 className="font-semibold text-sm text-[var(--md-sys-color-on-surface)] break-all">
-                          {item.fileName}
-                        </h3>
-                        <span className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold bg-[var(--md-sys-color-secondary-container)] text-[var(--md-sys-color-on-secondary-container)]">
-                          {item.source === "recording" ? "Recording" : "Upload"}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-xs text-[var(--md-sys-color-on-surface-variant)]">
-                        {item.createdAtLabel}
-                      </p>
-                      <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-                        <div className="rounded-xl bg-[var(--md-sys-color-surface)] px-2 py-1.5 border border-[color:var(--md-sys-color-outline)]/20">
-                          <p className="text-[var(--md-sys-color-on-surface-variant)]">
-                            Duration
-                          </p>
-                          <p className="font-semibold text-[var(--md-sys-color-on-surface)]">
-                            {item.durationLabel}
-                          </p>
-                        </div>
-                        <div className="rounded-xl bg-[var(--md-sys-color-surface)] px-2 py-1.5 border border-[color:var(--md-sys-color-outline)]/20">
-                          <p className="text-[var(--md-sys-color-on-surface-variant)]">
-                            Chars
-                          </p>
-                          <p className="font-semibold text-[var(--md-sys-color-on-surface)]">
-                            {item.charsLabel}
-                          </p>
-                        </div>
-                        <div className="rounded-xl bg-[var(--md-sys-color-surface)] px-2 py-1.5 border border-[color:var(--md-sys-color-outline)]/20">
-                          <p className="text-[var(--md-sys-color-on-surface-variant)]">
-                            Words
-                          </p>
-                          <p className="font-semibold text-[var(--md-sys-color-on-surface)]">
-                            {item.wordsLabel}
-                          </p>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </div>
-          </aside>
-        </div>
-      )}
 
       <main className="relative max-w-4xl mx-auto px-6 pb-6 space-y-8">
         {/* Error Banner */}
@@ -1146,20 +825,6 @@ export default function App() {
                   title="Save"
                 >
                   <Save className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={exportToMarkdown}
-                  className="px-3 py-2.5 hover:bg-[var(--md-sys-color-surface-container-highest)] rounded-xl text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)]"
-                  title="Export Markdown"
-                >
-                  .md
-                </button>
-                <button
-                  onClick={exportToJson}
-                  className="px-3 py-2.5 hover:bg-[var(--md-sys-color-surface-container-highest)] rounded-xl text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)]"
-                  title="Export JSON"
-                >
-                  .json
                 </button>
               </div>
             </div>

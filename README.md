@@ -6,10 +6,9 @@ TranscribeJS is an audio transcription app powered by Mistral AI, built with Rea
 
 1. Open the app (`bun run dev` for web or `bun run dev:tauri` for desktop).
 2. Open **Settings** and paste your Mistral API key.
-3. Optionally choose a transcription model and source language, then save.
+3. Save the key and wait for validation confirmation.
 4. Upload an audio file (or drag and drop) or record directly from the microphone.
-5. Wait for processing, then review the transcript and export it as `.txt`, `.md`, or `.json`.
-6. Use the History panel to review previous transcriptions stored locally.
+5. Wait for processing, then review the transcript and export it as `.txt`.
 
 ## Supported Targets
 
