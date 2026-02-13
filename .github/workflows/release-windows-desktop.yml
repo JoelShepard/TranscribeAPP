@@ -3,6 +3,12 @@ name: Release Windows Desktop Assets
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to publish assets to (e.g. v0.3.0)"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -14,6 +20,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -31,11 +39,19 @@ jobs:
         id: version
         shell: pwsh
         run: |
-          $versionName = "$env:GITHUB_REF_NAME"
-          if ($versionName.StartsWith("v")) {
-            $versionName = $versionName.Substring(1)
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $releaseTag = "${{ inputs.release_tag }}"
+          } else {
+            $releaseTag = "$env:GITHUB_REF_NAME"
           }
+
+          if (-not $releaseTag.StartsWith("v")) {
+            $releaseTag = "v$releaseTag"
+          }
+
+          $versionName = $releaseTag.Substring(1)
           "version_name=$versionName" >> $env:GITHUB_OUTPUT
+          "release_tag=$releaseTag" >> $env:GITHUB_OUTPUT
 
       - name: Prepare release assets
         env:
@@ -55,7 +71,7 @@ jobs:
       - name: Publish GitHub release assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ steps.version.outputs.release_tag }}
           files: |
             release-assets/TranscribeJS-windows-v${{ steps.version.outputs.version_name }}-x86_64.exe
             release-assets/TranscribeJS-windows-v${{ steps.version.outputs.version_name }}-x86_64.exe.sha256
