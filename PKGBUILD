@@ -15,8 +15,7 @@ build() {
     cd "$srcdir/.."
 
     bun install --frozen-lockfile
-    bun run build
-    cargo build --release --manifest-path src-tauri/Cargo.toml
+    bun run build:tauri -- --no-bundle
 }
 
 package() {

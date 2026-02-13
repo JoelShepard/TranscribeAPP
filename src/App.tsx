@@ -638,7 +638,12 @@ export default function App() {
       </header>
 
       {!hasVerifiedApiKey && (
-        <div className="relative z-[1] -mt-8 mb-6 flex justify-center px-4 sm:px-6">
+        <div
+          className={cn(
+            "relative z-[1] mb-6 flex justify-center px-4 sm:px-6",
+            tauriEnv ? "mt-2" : "-mt-8",
+          )}
+        >
           <a
             href="https://console.mistral.ai/api-keys"
             target="_blank"
