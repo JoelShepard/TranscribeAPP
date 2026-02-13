@@ -9,6 +9,8 @@
   "scripts": {
     "dev": "bun run dev.ts",
     "build": "bun run build.ts",
+    "build:android": "bun run build-android.ts",
+    "build:adb": "bun run build-adb.ts",
     "lint": "bunx --bun eslint \"src/**/*.{ts,tsx}\"",
     "tauri": "tauri",
     "dev:tauri": "tauri dev",
