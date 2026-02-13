@@ -13,6 +13,7 @@ TranscribeJS is an audio transcription app powered by Mistral AI, built with Rea
 ## Supported Targets
 
 - Linux native desktop app with Tauri v2 (Rust backend, native microphone recording on Linux)
+- Windows native desktop app with Tauri v2
 - Android app via Capacitor
 - Web app packaged and served with Docker
 
@@ -32,7 +33,7 @@ TranscribeJS is an audio transcription app powered by Mistral AI, built with Rea
 | **Dev (Web)**     | `bun run dev`         | Start web dev server with hot reload.      |
 | **Build (Web)**   | `bun run build`       | Build web assets into `dist/`.             |
 | **Dev (Tauri)**   | `bun run dev:tauri`   | Start Tauri dev environment.               |
-| **Build (Tauri)** | `bun run build:tauri` | Build Linux native Tauri app.              |
+| **Build (Tauri)** | `bun run build:tauri` | Build desktop Tauri app (Linux/Windows).   |
 | **Android Sync**  | `bun run cap:sync`    | Build web assets and sync Android project. |
 | **Run Temp (ADB)** | `bun run build:adb` | Build debug, run on device, then uninstall automatically when stopped. |
 | **Tests**         | `bun test`            | Run Bun test suite.                        |

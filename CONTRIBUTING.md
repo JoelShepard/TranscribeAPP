@@ -2,7 +2,7 @@
 
 Thanks for contributing to TranscribeJS.
 
-This project targets Bun + React + TypeScript on the frontend, with Tauri for Linux desktop and Capacitor for Android.
+This project targets Bun + React + TypeScript on the frontend, with Tauri for desktop and Capacitor for Android.
 
 ## Development Setup
 
@@ -23,8 +23,8 @@ bun run dev
 
 - `bun run dev`: Run web development server with hot reload.
 - `bun run build`: Build web app into `dist/`.
-- `bun run dev:tauri`: Run Linux desktop app in Tauri dev mode.
-- `bun run build:tauri`: Build Linux desktop binary.
+- `bun run dev:tauri`: Run desktop app in Tauri dev mode.
+- `bun run build:tauri`: Build desktop binary.
 - `bun run cap:sync`: Build and sync assets to Android project.
 - `bun test`: Run test suite.
 - `bun run lint`: Run ESLint checks.

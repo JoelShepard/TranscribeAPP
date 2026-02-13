@@ -1,0 +1,61 @@
+name: Release Windows Desktop Assets
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build desktop binary
+        run: bun run build:tauri -- --no-bundle
+
+      - name: Extract release version from tag
+        id: version
+        shell: pwsh
+        run: |
+          $versionName = "$env:GITHUB_REF_NAME"
+          if ($versionName.StartsWith("v")) {
+            $versionName = $versionName.Substring(1)
+          }
+          "version_name=$versionName" >> $env:GITHUB_OUTPUT
+
+      - name: Prepare release assets
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "release-assets" -Force | Out-Null
+
+          $assetName = "TranscribeJS-windows-v$env:VERSION_NAME-x86_64.exe"
+          $assetPath = "release-assets/$assetName"
+
+          Copy-Item "src-tauri/target/release/app.exe" $assetPath
+
+          $hash = (Get-FileHash -Path $assetPath -Algorithm SHA256).Hash.ToLower()
+          "$hash  $assetName" | Out-File -FilePath "$assetPath.sha256" -Encoding ascii
+
+      - name: Publish GitHub release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            release-assets/TranscribeJS-windows-v${{ steps.version.outputs.version_name }}-x86_64.exe
+            release-assets/TranscribeJS-windows-v${{ steps.version.outputs.version_name }}-x86_64.exe.sha256
