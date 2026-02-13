@@ -34,17 +34,10 @@ TranscribeJS is an audio transcription app powered by Mistral AI, built with Rea
 | **Dev (Tauri)**   | `bun run dev:tauri`   | Start Tauri dev environment.               |
 | **Build (Tauri)** | `bun run build:tauri` | Build Linux native Tauri app.              |
 | **Android Sync**  | `bun run cap:sync`    | Build web assets and sync Android project. |
-| **Build (Android APK)** | `bun run build:android` | Build APK into `artifacts/android/` (release if signing is configured, otherwise debug). |
 | **Run Temp (ADB)** | `bun run build:adb` | Build debug, run on device, then uninstall automatically when stopped. |
-| **Android Dev**   | `bun run cap:android` | Sync and open Android Studio project.      |
 | **Tests**         | `bun test`            | Run Bun test suite.                        |
 
-To force a signed release APK, provide signing vars:
-
-- `ANDROID_KEYSTORE_PASSWORD`
-- `ANDROID_KEY_ALIAS`
-- `ANDROID_KEY_PASSWORD`
-- one of: `ANDROID_KEYSTORE_BASE64` (same secret used in GitHub Actions) or `ANDROID_KEYSTORE_PATH` (defaults to `android/app/release-key.jks`)
+Signed release APK artifacts are produced by the GitHub Actions release workflow on `v*` tags.
 
 `bun run build:adb` uses the debug package id `com.transcribe.app.debug`, so it can run alongside the release app. It uninstalls the debug app when you close it or press `Ctrl+C`.
 

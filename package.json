@@ -1,7 +1,7 @@
 {
   "name": "transcribeapp",
   "productName": "TranscribeJS",
-  "version": "0.2.7",
+  "version": "0.3.0",
   "description": "TranscribeJS transcription app",
   "author": "JoeShep",
   "type": "module",
@@ -9,14 +9,11 @@
   "scripts": {
     "dev": "bun run dev.ts",
     "build": "bun run build.ts",
-    "build:android": "bun run build-android.ts",
     "build:adb": "bun run build-adb.ts",
     "lint": "bunx --bun eslint \"src/**/*.{ts,tsx}\"",
-    "tauri": "tauri",
     "dev:tauri": "tauri dev",
     "build:tauri": "tauri build",
-    "cap:sync": "bun run build && bunx cap sync",
-    "cap:android": "bun run cap:sync && bunx cap open android"
+    "cap:sync": "bun run build && bunx cap sync"
   },
   "devDependencies": {
     "@capacitor/android": "^8.0.2",
@@ -30,10 +27,8 @@
     "eslint": "^9.39.0",
     "eslint-plugin-react-hooks": "^7.0.1",
     "tailwindcss": "^4.1.18",
+    "typescript": "^5",
     "typescript-eslint": "^8.55.0"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.10.1",

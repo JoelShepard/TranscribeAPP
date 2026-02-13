@@ -28,8 +28,6 @@ import {
   formatNativeMicrophoneError,
 } from "./constants/messages";
 import {
-  type ProcessingSource,
-  type ResultMetadata,
   type Status,
 } from "./types";
 import {
@@ -101,13 +99,6 @@ function getErrorDetails(err: unknown): string {
   return ERROR_MESSAGES.unknownError;
 }
 
-function formatDuration(seconds: number): string {
-  const safeSeconds = Math.max(0, Math.floor(seconds));
-  const minutes = Math.floor(safeSeconds / 60);
-  const remainingSeconds = safeSeconds % 60;
-  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
-}
-
 export default function App() {
   const { theme, toggleTheme } = useTheme();
   const [apiKey, setApiKey] = useState("");
@@ -115,9 +106,6 @@ export default function App() {
   const [status, setStatus] = useState<Status>("idle");
   const [progress, setProgress] = useState("");
   const [transcription, setTranscription] = useState("");
-  const [resultMetadata, setResultMetadata] = useState<ResultMetadata | null>(
-    null,
-  );
   const [error, setError] = useState("");
   const [tauriEnv, setTauriEnv] = useState(() => isTauriRuntime());
   const [linuxEnv, setLinuxEnv] = useState(false);
@@ -214,7 +202,7 @@ export default function App() {
       return;
     }
 
-    await processAudio(file, "upload");
+    await processAudio(file);
   };
 
   const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
@@ -232,7 +220,7 @@ export default function App() {
       return;
     }
 
-    await processAudio(file, "upload");
+    await processAudio(file);
   };
 
   const startRecording = async () => {
@@ -305,7 +293,7 @@ export default function App() {
         });
         mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
         mediaStreamRef.current = null;
-        await processAudio(file, "recording");
+        await processAudio(file);
       };
 
       mediaRecorder.start();
@@ -334,7 +322,7 @@ export default function App() {
         const file = new File([audioData], "recording.wav", {
           type: "audio/wav",
         });
-        await processAudio(file, "recording");
+        await processAudio(file);
       } catch (err: unknown) {
         console.error("[App] Error stopping native recording:", err);
         setError(formatNativeMicrophoneError(getErrorDetails(err)));
@@ -366,7 +354,7 @@ export default function App() {
     };
   }, []);
 
-  const processAudio = async (file: File, source: ProcessingSource) => {
+  const processAudio = async (file: File) => {
     console.log(
       "[App] Starting processAudio for file:",
       file.name,
@@ -387,7 +375,6 @@ export default function App() {
     try {
       setError("");
       setTranscription("");
-      setResultMetadata(null);
       setStatus("processing");
       setProgress("Analyzing audio...");
 
@@ -442,21 +429,6 @@ export default function App() {
         fullTranscription.length,
         "chars",
       );
-      const wordCount =
-        fullTranscription.trim().length > 0
-          ? fullTranscription.trim().split(/\s+/).length
-          : 0;
-      const processedAt = new Date().toISOString();
-
-      setResultMetadata({
-        fileName: file.name,
-        durationSeconds: duration,
-        source,
-        transcriptionChars: fullTranscription.length,
-        wordCount,
-        processedAt,
-      });
-
       setTranscription(fullTranscription);
       setStatus("done");
       setProgress("");
@@ -529,7 +501,7 @@ export default function App() {
         )}
       >
         <div
-          className={cn("max-w-4xl mx-auto px-6", tauriEnv ? "py-2" : "py-4")}
+          className={cn("max-w-4xl mx-auto px-4 sm:px-6", tauriEnv ? "py-2" : "py-4")}
         >
           {(() => {
             const logoContent = (
@@ -537,34 +509,22 @@ export default function App() {
                 onClick={() => {
                   setStatus("idle");
                   setTranscription("");
-                  setResultMetadata(null);
                   setError("");
                 }}
-                className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                className="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity"
                 aria-label="Go to Home"
               >
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-[var(--md-sys-color-on-primary)] bg-[var(--md-sys-color-primary)] shadow-[0_8px_18px_rgba(39,80,196,0.30)]">
                   <AudioLines className="w-5 h-5" />
                 </div>
-                <h1 className="text-xl font-extrabold tracking-tight text-[var(--md-sys-color-on-surface)]">
+                <h1 className="text-xl font-extrabold tracking-tight text-[var(--md-sys-color-on-surface)] truncate">
                   TranscribeJS
                 </h1>
               </button>
             );
 
             const actionsContent = (
-              <div className="flex items-center gap-2">
-                {!hasVerifiedApiKey && (
-                  <a
-                    href="https://console.mistral.ai/api-keys"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-2xl bg-[var(--md-sys-color-secondary-container)] px-3.5 py-2.5 text-sm font-bold text-[var(--md-sys-color-on-secondary-container)] hover:opacity-90 transition-opacity"
-                  >
-                    Get API Key
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
-                )}
+              <div className="flex items-center justify-end gap-2 shrink-0">
                 <button
                   onClick={toggleTheme}
                   className="p-2.5 rounded-2xl bg-[var(--md-sys-color-surface-container-high)] hover:bg-[var(--md-sys-color-surface-container-highest)] transition-colors text-[var(--md-sys-color-on-surface-variant)]"
@@ -623,9 +583,10 @@ export default function App() {
             return (
               <div
                 className={cn(
-                  "flex justify-between items-center",
+                  "flex gap-3",
                   pillClass,
                   paddingClass,
+                  "items-center justify-between",
                 )}
               >
                 {logoContent}
@@ -675,6 +636,20 @@ export default function App() {
           )}
         </div>
       </header>
+
+      {!hasVerifiedApiKey && (
+        <div className="relative z-[1] -mt-8 mb-6 flex justify-center px-4 sm:px-6">
+          <a
+            href="https://console.mistral.ai/api-keys"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-2xl border border-[color:var(--md-sys-color-outline)]/30 bg-[var(--md-sys-color-secondary-container)] px-5 py-3 text-sm font-bold text-[var(--md-sys-color-on-secondary-container)] shadow-[0_10px_24px_rgba(22,27,45,0.16)] hover:-translate-y-0.5 hover:opacity-95 transition-all"
+          >
+            <span>Get your Mistral API Key</span>
+            <ExternalLink className="w-4 h-4" />
+          </a>
+        </div>
+      )}
 
       <main className="relative max-w-4xl mx-auto px-6 pb-6 space-y-8">
         {/* Error Banner */}
@@ -839,7 +814,6 @@ export default function App() {
               <button
                 onClick={() => {
                   setStatus("idle");
-                  setResultMetadata(null);
                 }}
                 className="text-[var(--md-sys-color-primary)] font-bold hover:opacity-80"
               >

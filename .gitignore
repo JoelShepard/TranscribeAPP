@@ -64,8 +64,13 @@ src-tauri/gen/
 # IDE and OS files
 .idea/
 .vscode/
+.ralph/
 .DS_Store
 Thumbs.db
+
+# Android IDE-local metadata
+android/app/.project
+android/app/.settings/
 
 # Local runner config
 compose-runner.yml
