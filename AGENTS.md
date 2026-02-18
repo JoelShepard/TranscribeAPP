@@ -167,18 +167,20 @@ The build uses two custom scripts (`build.ts` and `dev.ts`) that call the Tailwi
 
 ### 6.7 CI Workflow Inventory
 
-There are exactly **four** GitHub Actions workflows. Do not add or remove workflows without explicit approval.
+There are exactly **five** GitHub Actions workflows. Do not add or remove workflows without explicit approval.
 
-| Workflow                    | Trigger      | Purpose                                                              |
-| :-------------------------- | :----------- | :------------------------------------------------------------------- |
-| `ci-tests.yml`              | PR to `main` | Runs `bun test`                                                      |
-| `publish-ghcr.yml`          | Tag `v*`     | Builds and pushes Docker image to GHCR (multi-arch: amd64 + arm64)   |
-| `release-linux-desktop.yml` | Tag `v*`     | Builds Tauri binary (`--no-bundle`) and publishes to GitHub Releases |
-| `release-android-apk.yml`   | Tag `v*`     | Builds signed APK and publishes to GitHub Releases                   |
+| Workflow                      | Trigger                        | Purpose                                                              |
+| :---------------------------- | :----------------------------- | :------------------------------------------------------------------- |
+| `ci-tests.yml`                | PR to `main`                   | Runs `bun test`                                                      |
+| `publish-ghcr.yml`            | Tag `v*`                       | Builds and pushes Docker image to GHCR (multi-arch: amd64 + arm64)   |
+| `release-linux-desktop.yml`   | Tag `v*`                       | Builds Tauri binary (`--no-bundle`) and publishes to GitHub Releases |
+| `release-windows-desktop.yml` | Tag `v*` / `workflow_dispatch` | Builds Windows Tauri binary and publishes to GitHub Releases         |
+| `release-android-apk.yml`     | Tag `v*`                       | Builds signed APK and publishes to GitHub Releases                   |
 
 - **Rule:** The Linux desktop workflow uses `ubuntu-22.04` (pinned), not `ubuntu-latest`. Do not change this — the Tauri v2 build depends on specific `libwebkit2gtk-4.1-dev` availability.
 - **Rule:** The desktop build uses `--no-bundle`. No AppImage, deb, or rpm formats are produced. Only the raw binary is released.
 - **Rule:** Android signing requires four secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`. The workflow validates all four exist before building.
+- **Rule:** The Windows workflow supports `workflow_dispatch` with a `release_tag` input to manually attach assets to an existing release. Do not remove this trigger.
 
 ### 6.8 Android Build Integrity
 
@@ -203,12 +205,16 @@ The application uses a custom sticky header that sits below the window title bar
 ## 7. Workflow Rules for Agents
 
 1.  **Read First:** Always read `package.json` and `README.md` to understand current context.
-2.  **Verify:** After making changes, run `bun run build` to ensure no compilation errors.
-3.  **Clean Up:** Remove unused files or imports introduced during refactoring.
-4.  **No Placeholders:** Implementation should be complete. If a placeholder is strictly necessary, mark it with `TODO:`.
-5.  **Milestones Execution:** Upon start, read the `MILESTONES.md` file. Start working on the first unchecked milestone (`[ ]`). Once completed, update `MILESTONES.md` to mark it as checked (`[x]`).
-6.  **Release Branch Hygiene:** Before creating/pushing a release tag, run `git status --short`. If there are modified tracked source files (e.g. `src/**`, `src-tauri/**`), do not publish until they are either committed intentionally or explicitly excluded by the user.
-7.  **Desktop Release Verification:** After a release build, verify that the Linux binary artifact is present and valid in GitHub Releases.
+2.  **Branch First:** Before making any change to source code (`src/`, `src-tauri/`, `android/`), create a dedicated branch from an up-to-date `main`. Never commit source changes directly to `main`. See §9 for the full branching model.
+3.  **Conventional Commits:** Every commit message must follow the Conventional Commits standard defined in §9.5. Messages like `"wip"`, `"fix stuff"`, or `"iteration 3"` are not acceptable.
+4.  **Build Before PR:** Run `bun test && bun run build` locally and ensure both pass before opening a Pull Request. A PR that breaks CI is a blocking error.
+5.  **PR Before Merge:** No code reaches `main` without an open PR and a green `ci-tests.yml` run. Direct pushes to `main` for source changes are forbidden.
+6.  **Verify:** After making changes, run `bun run build` to ensure no compilation errors.
+7.  **Clean Up:** Remove unused files or imports introduced during refactoring.
+8.  **No Placeholders:** Implementation should be complete. If a placeholder is strictly necessary, mark it with `TODO:`.
+9.  **Milestones Execution:** Upon start, read the `MILESTONES.md` file. Start working on the first unchecked milestone (`[ ]`). Once completed, update `MILESTONES.md` to mark it as checked (`[x]`).
+10. **Release Branch Hygiene:** Before creating/pushing a release tag, run `git status --short`. If there are modified tracked source files (e.g. `src/**`, `src-tauri/**`), do not publish until they are either committed intentionally or explicitly excluded by the user.
+11. **Desktop Release Verification:** After a release build, verify that the Linux binary artifact is present and valid in GitHub Releases.
 
 ## 8. Repository & CI/CD (GitHub)
 
@@ -238,3 +244,292 @@ git commit -m "chore: prepare release"
 git tag -a vX.Y.Z -m "Release vX.Y.Z"
 git push origin main --follow-tags
 ```
+
+## 9. Git Branching & Development Workflow
+
+This section defines the authoritative, end-to-end Git workflow for this repository. Its primary goal is to guarantee that `main` is always stable, buildable, and production-ready. All feature development, bug fixing, and release preparation happens in isolated branches and lands on `main` exclusively through reviewed Pull Requests.
+
+### 9.1 Branch Model
+
+The repository uses a three-tier branch model:
+
+| Tier | Branch Pattern | Scope | Lifetime | Merges Into |
+| :--- | :------------- | :---- | :------- | :---------- |
+| **Stable** | `main` | Production-ready state of the codebase | Permanent | — |
+| **Work** | `feat/*`, `fix/*`, `chore/*`, `refactor/*`, `docs/*`, `test/*`, `ci/*`, `perf/*` | Single unit of work (one feature, one fix) | Short (hours to days) | `main` via PR |
+| **Release** | `release/vX.Y.Z` | Version freeze, version bump, changelog | Very short (hours) | `main` via PR, then tagged |
+
+**Branch naming convention — mandatory:**
+
+| Prefix | When to use | Example |
+| :----- | :---------- | :------ |
+| `feat/` | Adding new user-facing functionality | `feat/audio-waveform-visualizer` |
+| `fix/` | Correcting a bug (any severity) | `fix/tauri-csp-load-failed` |
+| `chore/` | Build scripts, dependencies, tooling, CI config | `chore/update-bun-1.4` |
+| `refactor/` | Code restructuring with no behavior change | `refactor/settings-panel-hooks` |
+| `docs/` | Documentation-only changes | `docs/update-agents-workflow` |
+| `test/` | Adding or fixing tests | `test/audio-duration-edge-cases` |
+| `ci/` | GitHub Actions workflow changes | `ci/pin-ubuntu-runner` |
+| `perf/` | Performance improvements | `perf/reduce-bundle-size` |
+| `release/` | Release preparation | `release/v0.4.0` |
+
+Names must be lowercase, hyphen-separated, and descriptive. No numbers-only names, no names like `my-branch` or `test2`.
+
+### 9.2 Feature Branch Lifecycle
+
+Every unit of work follows these steps in order. Do not skip or reorder them.
+
+**Step 1 — Sync from main:**
+```bash
+git checkout main
+git pull origin main
+```
+Always start from the latest `main`. Never branch from a stale local copy.
+
+**Step 2 — Create the branch:**
+```bash
+git checkout -b feat/my-feature-name
+```
+
+**Step 3 — Develop with atomic commits:**
+
+Make small, focused commits as you work. Each commit should represent a single logical change that leaves the code in a coherent state. Use the Conventional Commits format (§9.5) for every commit message.
+
+```bash
+# Good: atomic, descriptive
+git commit -m "feat(audio): add waveform canvas component"
+git commit -m "feat(audio): wire waveform to MediaRecorder stream"
+
+# Bad: vague, non-atomic
+git commit -m "wip"
+git commit -m "more changes"
+```
+
+**Step 4 — Validate locally before pushing:**
+```bash
+bun test && bun run build
+```
+Both must pass with zero errors. A branch that breaks the build must not be pushed.
+
+**Step 5 — Push the branch to origin:**
+```bash
+git push -u origin feat/my-feature-name
+```
+
+**Step 6 — Open a Pull Request:**
+```bash
+gh pr create \
+  --title "feat(audio): add waveform visualizer" \
+  --body "$(cat <<'EOF'
+## Description
+Adds a real-time waveform canvas that renders microphone input during recording.
+
+## Type of change
+- [x] feat: new functionality
+- [ ] fix: bug correction
+- [ ] chore/refactor: maintenance
+
+## Local validation
+- [x] `bun test` passes
+- [x] `bun run build` passes
+
+## Anti-regression checks (§6)
+- [x] No changes to the dual recording path (§6.3)
+- [x] No changes to CSP (§6.2)
+- [x] No partial version bump (§6.1)
+EOF
+)"
+```
+
+**Step 7 — Wait for CI:**
+
+The `ci-tests.yml` workflow must complete with a green status before any merge is considered. A red CI run is a hard blocker. Fix the issue on the branch, push again, and wait for the CI to re-run.
+
+**Step 8 — Squash and merge into main:**
+
+Use **Squash and Merge** exclusively. This collapses all branch commits into one clean, atomic commit on `main`. The resulting commit message must follow Conventional Commits format.
+
+```bash
+# Via GitHub CLI
+gh pr merge <PR-NUMBER> --squash --delete-branch
+```
+
+The `--delete-branch` flag is mandatory. Remote branches must be cleaned up immediately after merge.
+
+**Step 9 — Clean up local branch:**
+```bash
+git checkout main
+git pull origin main
+git branch -d feat/my-feature-name
+```
+
+### 9.3 Golden Rules for `main`
+
+These rules are absolute. Any agent or developer violating them introduces instability into the production branch.
+
+**Forbidden — never do these:**
+
+- Direct `git push origin main` for any change to `src/`, `src-tauri/`, `android/`, `build.ts`, `dev.ts`, `package.json`, `Cargo.toml`, `Dockerfile`, or any GitHub Actions workflow.
+- Merging a branch that has a failing `bun test` or `bun run build`.
+- Merging a branch that has not been reviewed (via open PR).
+- Using `git push --force` on `main` under any circumstance.
+- Using `git commit --amend` on commits that have already been pushed to `main`.
+- Merging a branch that is behind `main` without first updating it.
+
+**Allowed — direct commits to `main` (documentation exceptions only):**
+
+The only files that may be committed directly to `main` without a PR are pure documentation files with no runtime impact: `AGENTS.md`, `README.md`, `MILESTONES.md`. Even for these, a branch is strongly preferred.
+
+**Invariant:** After every merge, `bun run build` on `main` must succeed. If it does not, the merge must be reverted immediately:
+
+```bash
+git revert <merge-commit-sha>
+git push origin main
+```
+
+### 9.4 Pull Request Checklist
+
+Every PR body must include the following checklist. Copy it verbatim and check off all applicable items before requesting a review.
+
+```markdown
+## Description
+<!-- One paragraph explaining what this PR does and why. -->
+
+## Type of change
+- [ ] `feat`: new user-facing functionality
+- [ ] `fix`: bug correction
+- [ ] `chore`: build, deps, tooling
+- [ ] `refactor`: code restructuring, no behavior change
+- [ ] `ci`: GitHub Actions workflow change
+- [ ] `docs`: documentation only
+- [ ] `perf`: performance improvement
+- [ ] `test`: test additions or fixes
+
+## Local validation
+- [ ] `bun test` passes with zero failures
+- [ ] `bun run build` completes with zero errors
+
+## Anti-regression checks (see §6)
+- [ ] §6.1 — No version bump, OR all four version files updated atomically
+- [ ] §6.2 — No new external API origin, OR `connect-src` updated in `tauri.conf.json`
+- [ ] §6.3 — No changes to recording logic, OR both Web and Native paths tested
+- [ ] §6.4 — `TitleBar.tsx` not broken, OR `decorations` re-enabled in `tauri.conf.json`
+- [ ] §6.6 — No TailwindCSS upgrade, OR both `build.ts` and `dev.ts` verified
+- [ ] §6.10 — No header layout changes, OR `mb-14` margin preserved in `App.tsx`
+
+## Screenshots / recordings (if UI change)
+<!-- Attach a screenshot or screen recording if this PR touches the UI. -->
+```
+
+### 9.5 Conventional Commits Standard
+
+Every commit message in this repository — whether on a feature branch or the squash-merge commit landing on `main` — must follow this format:
+
+```
+<type>(<optional-scope>): <imperative description in lowercase>
+```
+
+- **type**: one of the values from the table below (required).
+- **scope**: the part of the codebase affected, in parentheses (optional but recommended).
+- **description**: a short imperative phrase (max ~72 chars), lowercase, no trailing period.
+
+**Valid types:**
+
+| Type | When to use | Triggers SemVer |
+| :--- | :---------- | :-------------- |
+| `feat` | Adds a new user-facing feature | Minor bump |
+| `fix` | Corrects a bug | Patch bump |
+| `chore` | Build scripts, dependency updates, tooling, non-source maintenance | No bump |
+| `refactor` | Code restructuring with no change in external behavior | No bump |
+| `docs` | Documentation-only changes | No bump |
+| `test` | Adding or modifying tests | No bump |
+| `ci` | Changes to GitHub Actions workflows | No bump |
+| `perf` | Performance improvements | Patch bump |
+
+**Examples — correct:**
+
+```
+feat(audio): add real-time waveform visualizer during recording
+fix(tauri): resolve TypeError on Mistral API call due to missing CSP entry
+chore(deps): update bun to 1.4.0 and audit lockfile
+refactor(settings): extract API key input into dedicated hook
+ci: pin ubuntu-22.04 in linux release workflow
+docs(agents): add §9 git branching workflow
+test(audio): add edge case for zero-duration file uploads
+perf(build): enable bun bundler minification for production
+```
+
+**Examples — forbidden:**
+
+```
+wip
+fix stuff
+update
+more changes
+iteration 3
+Ralph iteration 5: work in progress
+final fix
+```
+
+**Breaking changes:** If a commit introduces a breaking change (requires a major version bump), append `!` after the type and add a `BREAKING CHANGE:` footer:
+
+```
+feat(api)!: replace Mistral client with multi-provider interface
+
+BREAKING CHANGE: The `MISTRAL_API_KEY` setting has been renamed to `AI_API_KEY`.
+```
+
+### 9.6 Release Flow
+
+Every release follows these five steps in order. No shortcuts.
+
+**Step 1 — Create the release branch from main:**
+```bash
+git checkout main
+git pull origin main
+git checkout -b release/vX.Y.Z
+```
+
+**Step 2 — Bump the version (atomically in one commit):**
+
+Update all four version files in a single commit (see §6.1 for the full list):
+
+```bash
+# Edit package.json, src-tauri/tauri.conf.json, src-tauri/Cargo.toml, PKGBUILD
+# Then commit all four at once:
+git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml PKGBUILD
+git commit -m "chore(release): bump version to X.Y.Z"
+```
+
+**Step 3 — Verify version consistency:**
+```bash
+grep -E '"version"' package.json src-tauri/tauri.conf.json \
+  && grep '^version' src-tauri/Cargo.toml \
+  && grep '^pkgver' PKGBUILD
+```
+All four lines must print the same version string. If they diverge, fix before proceeding.
+
+**Step 4 — Run final validation:**
+```bash
+bun test && bun run build
+```
+Both must pass. No release goes out with a broken build.
+
+**Step 5 — Open the release PR and merge:**
+```bash
+git push -u origin release/vX.Y.Z
+gh pr create \
+  --title "chore(release): prepare vX.Y.Z" \
+  --body "Release vX.Y.Z — version bump across all four manifest files."
+```
+
+After the PR is merged into `main` via Squash and Merge, create and push the annotated tag:
+
+```bash
+git checkout main
+git pull origin main
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
+```
+
+Pushing the tag triggers all five release workflows simultaneously (`publish-ghcr.yml`, `release-linux-desktop.yml`, `release-windows-desktop.yml`, `release-android-apk.yml`). Monitor all of them on GitHub Actions before announcing the release.
