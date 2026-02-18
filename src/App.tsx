@@ -35,6 +35,7 @@ import {
   isSupportedAudioFile,
   SUPPORTED_AUDIO_FORMATS_LABEL,
 } from "./utils/audioFormats";
+import pkg from "../package.json";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -493,7 +494,7 @@ export default function App() {
   return (
     <div
       className={cn(
-        "min-h-screen bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] transition-colors duration-200 relative overflow-x-hidden",
+        "min-h-screen flex flex-col bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] transition-colors duration-200 relative overflow-x-hidden",
         tauriEnv && "pt-8",
       )}
     >
@@ -663,7 +664,7 @@ export default function App() {
         </div>
       )}
 
-      <main className="relative max-w-4xl mx-auto px-6 pb-6 space-y-8">
+      <main className="relative flex-1 w-full max-w-4xl mx-auto px-6 pb-6 space-y-8">
         {/* Error Banner */}
         {error && (
           <div className="bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] p-4 rounded-2xl border border-red-300/40 flex items-center gap-2 shadow-sm">
@@ -835,6 +836,19 @@ export default function App() {
           </div>
         )}
       </main>
+      <footer className="w-full py-6 text-center text-sm text-[var(--md-sys-color-on-surface-variant)] opacity-60">
+        <p>
+          Version {pkg.version} • © 2026{" "}
+          <a
+            href="https://jshep.xyz/profile/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline hover:text-[var(--md-sys-color-primary)] transition-colors"
+          >
+            Joel Shepard
+          </a>
+        </p>
+      </footer>
     </div>
   );
 }
