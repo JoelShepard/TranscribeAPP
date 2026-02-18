@@ -268,6 +268,7 @@ export default function App() {
         "audio/webm;codecs=opus",
         "audio/webm",
         "audio/ogg;codecs=opus",
+        "audio/mp4",
       ];
       const selectedMimeType = mimeTypeCandidates.find((candidate) =>
         MediaRecorder.isTypeSupported(candidate),
@@ -286,7 +287,13 @@ export default function App() {
 
       mediaRecorder.onstop = async () => {
         const mimeType = mediaMimeTypeRef.current;
-        const extension = mimeType.includes("ogg") ? "ogg" : "webm";
+        let extension = "webm";
+        if (mimeType.includes("ogg")) {
+          extension = "ogg";
+        } else if (mimeType.includes("mp4")) {
+          extension = "mp4";
+        }
+
         const blob = new Blob(chunksRef.current, { type: mimeType });
         const file = new File([blob], `recording.${extension}`, {
           type: mimeType,

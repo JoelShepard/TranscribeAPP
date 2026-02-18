@@ -27,6 +27,7 @@ class MockAudio {
 }
 
 const originalAudio = globalThis.Audio;
+const originalAudioContext = globalThis.AudioContext;
 const originalCreateObjectURL = URL.createObjectURL;
 const originalRevokeObjectURL = URL.revokeObjectURL;
 
@@ -39,6 +40,15 @@ describe("AudioProcessor.getAudioDuration", () => {
     revokedUrls = [];
 
     globalThis.Audio = MockAudio as unknown as typeof Audio;
+    
+    // Mock AudioContext for fallback
+    globalThis.AudioContext = class MockAudioContext {
+      decodeAudioData(_buffer: ArrayBuffer) {
+        return Promise.resolve({ duration: 42 } as AudioBuffer);
+      }
+      createBuffer() { return {} as AudioBuffer; } // minimal mock
+    } as unknown as typeof AudioContext;
+
     URL.createObjectURL = () => {
       const url = `blob:mock-${createdUrls.length}`;
       createdUrls.push(url);
@@ -51,6 +61,7 @@ describe("AudioProcessor.getAudioDuration", () => {
 
   afterEach(() => {
     globalThis.Audio = originalAudio;
+    globalThis.AudioContext = originalAudioContext;
     URL.createObjectURL = originalCreateObjectURL;
     URL.revokeObjectURL = originalRevokeObjectURL;
   });
@@ -67,15 +78,36 @@ describe("AudioProcessor.getAudioDuration", () => {
     expect(revokedUrls).toEqual(createdUrls);
   });
 
-  it("rejects when metadata duration is invalid", async () => {
+  it("uses fallback decoding when metadata duration is invalid", async () => {
+    // Initial metadata load returns 0/Infinity
     MockAudio.nextOutcome = { type: "metadata", duration: 0 };
+    
     const processor = new AudioProcessor();
-    const file = new File(["audio"], "invalid.wav", { type: "audio/wav" });
+    const file = new File(["audio"], "invalid_header.webm", { type: "audio/webm" });
+
+    // Should return 42 from our mocked decodeAudioData
+    const duration = await processor.getAudioDuration(file);
+    
+    expect(duration).toBe(42);
+    expect(revokedUrls).toEqual(createdUrls);
+  });
+
+  it("rejects when both metadata and fallback fail", async () => {
+    MockAudio.nextOutcome = { type: "metadata", duration: 0 };
+    
+    // Override mock to fail decoding
+    globalThis.AudioContext = class BrokenAudioContext {
+      decodeAudioData() {
+        return Promise.reject(new Error("Decoding failed"));
+      }
+    } as unknown as typeof AudioContext;
+
+    const processor = new AudioProcessor();
+    const file = new File(["audio"], "broken.wav", { type: "audio/wav" });
 
     await expect(processor.getAudioDuration(file)).rejects.toThrow(
       "Unable to read audio duration.",
     );
-    expect(revokedUrls).toEqual(createdUrls);
   });
 
   it("rejects when audio metadata cannot be loaded", async () => {

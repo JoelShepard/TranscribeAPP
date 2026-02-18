@@ -9,7 +9,12 @@ export class AudioProcessor {
 
   private getContext() {
     if (!this.audioContext) {
-      this.audioContext = new AudioContext();
+      const AudioContextClass =
+        globalThis.AudioContext ||
+        (globalThis as any).webkitAudioContext ||
+        window.AudioContext ||
+        (window as any).webkitAudioContext;
+      this.audioContext = new AudioContextClass();
     }
     return this.audioContext;
   }
@@ -28,11 +33,24 @@ export class AudioProcessor {
       audio.onloadedmetadata = () => {
         const duration = audio.duration;
         cleanup();
-        if (!Number.isFinite(duration) || duration <= 0) {
-          reject(new Error("Unable to read audio duration."));
+
+        if (Number.isFinite(duration) && duration > 0) {
+          resolve({ duration });
           return;
         }
-        resolve({ duration });
+
+        // Fallback: Try to decode the audio buffer to get the duration
+        // This is necessary for some browsers (Firefox/Safari) that produce
+        // WebM/Ogg blobs without proper duration headers.
+        file
+          .arrayBuffer()
+          .then((arrayBuffer) => this.getContext().decodeAudioData(arrayBuffer))
+          .then((audioBuffer) => {
+            resolve({ duration: audioBuffer.duration });
+          })
+          .catch(() => {
+            reject(new Error("Unable to read audio duration."));
+          });
       };
 
       audio.onerror = () => {
