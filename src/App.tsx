@@ -845,7 +845,7 @@ export default function App() {
             rel="noopener noreferrer"
             className="hover:underline hover:text-[var(--md-sys-color-primary)] transition-colors"
           >
-            Joel Shepard
+            JoeShep
           </a>
         </p>
       </footer>
