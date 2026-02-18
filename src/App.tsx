@@ -569,21 +569,16 @@ export default function App() {
 
             if (tauriEnv) {
               return (
-                <div className="flex justify-between items-center gap-4 w-full">
-                  <div
-                    className={cn(
-                      pillClass,
-                      paddingClass,
-                      "flex items-center flex-1",
-                    )}
-                  >
-                    {logoContent}
-                  </div>
-                  <div
-                    className={cn(pillClass, paddingClass, "flex items-center")}
-                  >
-                    {actionsContent}
-                  </div>
+                <div
+                  className={cn(
+                    "flex gap-3",
+                    pillClass,
+                    paddingClass,
+                    "items-center justify-between",
+                  )}
+                >
+                  {logoContent}
+                  {actionsContent}
                 </div>
               );
             }
