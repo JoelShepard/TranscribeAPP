@@ -247,14 +247,14 @@ export function TranslationCard({
   return (
     <div
       id="translation-card"
-      className="bg-[var(--md-sys-color-surface-container)] rounded-[30px] shadow-[0_8px_24px_rgba(27,34,57,0.10)] border border-[color:var(--md-sys-color-outline)]/30 overflow-hidden"
+      className="bg-surface-container rounded-[30px] shadow-[0_8px_24px_rgba(27,34,57,0.10)] border border-outline/30 overflow-hidden"
     >
       {/* Card header */}
-      <div className="bg-[var(--md-sys-color-surface-container-high)] px-6 py-4 border-b border-[color:var(--md-sys-color-outline)]/30 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-xl bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] flex items-center justify-center">
+      <div className="bg-surface-container-high px-6 py-4 border-b border-outline/30 flex items-center gap-3">
+        <div className="w-8 h-8 rounded-xl bg-tertiary-container text-on-tertiary-container flex items-center justify-center">
           <Languages className="w-4 h-4" />
         </div>
-        <h3 className="font-bold text-[var(--md-sys-color-on-surface)]">
+        <h3 className="font-bold text-on-surface">
           DeepL Translation
         </h3>
       </div>
@@ -270,7 +270,7 @@ export function TranslationCard({
 
         {/* Error */}
         {error && (
-          <div className="bg-[var(--md-sys-color-error-container)] text-[var(--md-sys-color-on-error-container)] px-4 py-3 rounded-2xl text-sm border border-red-300/40">
+          <div className="bg-error-container text-on-error-container px-4 py-3 rounded-2xl text-sm border border-red-300/40">
             {error}
           </div>
         )}
@@ -279,24 +279,27 @@ export function TranslationCard({
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-3 items-center">
           {/* Source language */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wide">
+            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">
               Source
             </label>
-            <select
-              value={sourceLang}
-              onChange={(e) => setSourceLang(e.target.value)}
-              className="w-full p-3 rounded-2xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/50 outline-none text-sm"
-            >
-              {DEEPL_SOURCE_LANGUAGES.map((l) => (
-                <option key={l.code} value={l.code}>
-                  {l.name}
-                </option>
-              ))}
-            </select>
+            <div className="relative group">
+              <select
+                value={sourceLang}
+                onChange={(e) => setSourceLang(e.target.value)}
+                className="w-full p-3 pr-10 rounded-2xl border border-outline/40 bg-surface text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm appearance-none transition-all cursor-pointer"
+              >
+                {DEEPL_SOURCE_LANGUAGES.map((l) => (
+                  <option key={l.code} value={l.code} className="bg-surface text-on-surface">
+                    {l.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant pointer-events-none group-focus-within:rotate-180 transition-transform" />
+            </div>
             {detectedLang && sourceLang === "" && (
-              <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] pl-1">
+              <p className="text-xs text-on-surface-variant pl-1">
                 Detected:{" "}
-                <span className="font-semibold text-[var(--md-sys-color-primary)]">
+                <span className="font-semibold text-primary">
                   {detectedLang}
                 </span>
               </p>
@@ -304,24 +307,27 @@ export function TranslationCard({
           </div>
 
           {/* Arrow */}
-          <ArrowRight className="hidden sm:block w-5 h-5 text-[var(--md-sys-color-on-surface-variant)] self-end mb-3 mx-auto" />
+          <ArrowRight className="hidden sm:block w-5 h-5 text-on-surface-variant self-end mb-3 mx-auto" />
 
           {/* Target language */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wide">
+            <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">
               Target
             </label>
-            <select
-              value={targetLang}
-              onChange={(e) => setTargetLang(e.target.value)}
-              className="w-full p-3 rounded-2xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/50 outline-none text-sm"
-            >
-              {DEEPL_TARGET_LANGUAGES.map((l) => (
-                <option key={l.code} value={l.code}>
-                  {l.name}
-                </option>
-              ))}
-            </select>
+            <div className="relative group">
+              <select
+                value={targetLang}
+                onChange={(e) => setTargetLang(e.target.value)}
+                className="w-full p-3 pr-10 rounded-2xl border border-outline/40 bg-surface text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm appearance-none transition-all cursor-pointer"
+              >
+                {DEEPL_TARGET_LANGUAGES.map((l) => (
+                  <option key={l.code} value={l.code} className="bg-surface text-on-surface">
+                    {l.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant pointer-events-none group-focus-within:rotate-180 transition-transform" />
+            </div>
           </div>
         </div>
 
@@ -332,9 +338,9 @@ export function TranslationCard({
             onChange={(e) => setSourceText(e.target.value)}
             placeholder="Enter text to translate..."
             rows={5}
-            className="w-full p-4 rounded-2xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/50 outline-none resize-none text-sm leading-relaxed"
+            className="w-full p-4 rounded-2xl border border-outline/40 bg-surface text-on-surface focus:ring-2 focus:ring-primary/50 outline-none resize-none text-sm leading-relaxed"
           />
-          <span className="absolute bottom-3 right-4 text-xs text-[var(--md-sys-color-on-surface-variant)] select-none">
+          <span className="absolute bottom-3 right-4 text-xs text-on-surface-variant select-none">
             {charCount.toLocaleString()} chars
           </span>
         </div>
@@ -342,7 +348,7 @@ export function TranslationCard({
         {/* Advanced options toggle */}
         <button
           onClick={() => setShowAdvanced((v) => !v)}
-          className="flex items-center gap-2 text-sm font-semibold text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)] transition-colors"
+          className="flex items-center gap-2 text-sm font-semibold text-on-surface-variant hover:text-on-surface transition-colors"
         >
           {showAdvanced ? (
             <ChevronUp className="w-4 h-4" />
@@ -354,88 +360,98 @@ export function TranslationCard({
 
         {/* Advanced options panel */}
         {showAdvanced && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-[var(--md-sys-color-surface-container-low)] border border-[color:var(--md-sys-color-outline)]/20">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-surface-container-low border border-outline/20">
             {/* Formality */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wide">
+              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">
                 Formality
               </label>
-              <select
-                value={formality}
-                onChange={(e) => setFormality(e.target.value as DeepLFormality)}
-                disabled={!formalitySupported}
-                className={cn(
-                  "w-full p-2.5 rounded-xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] outline-none text-sm",
-                  !formalitySupported &&
-                    "opacity-40 cursor-not-allowed",
-                )}
-              >
-                <option value="default">Default</option>
-                <option value="more">More formal</option>
-                <option value="less">Less formal</option>
-                <option value="prefer_more">Prefer more formal</option>
-                <option value="prefer_less">Prefer less formal</option>
-              </select>
+              <div className="relative group">
+                <select
+                  value={formality}
+                  onChange={(e) => setFormality(e.target.value as DeepLFormality)}
+                  disabled={!formalitySupported}
+                  className={cn(
+                    "w-full p-2.5 pr-9 rounded-xl border border-outline/40 bg-surface text-on-surface outline-none text-sm appearance-none cursor-pointer transition-all",
+                    !formalitySupported && "opacity-40 cursor-not-allowed",
+                  )}
+                >
+                  <option value="default" className="bg-surface">Default</option>
+                  <option value="more" className="bg-surface">More formal</option>
+                  <option value="less" className="bg-surface">Less formal</option>
+                  <option value="prefer_more" className="bg-surface">Prefer more formal</option>
+                  <option value="prefer_less" className="bg-surface">Prefer less formal</option>
+                </select>
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-on-surface-variant pointer-events-none group-focus-within:rotate-180 transition-transform" />
+              </div>
               {!formalitySupported && (
-                <p className="text-xs text-[var(--md-sys-color-on-surface-variant)]">
-                  Not available for selected language
+                <p className="text-xs text-on-surface-variant pl-0.5 mt-0.5">
+                  Not available for target language
                 </p>
               )}
             </div>
 
             {/* Model type */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wide">
+              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">
                 Model
               </label>
-              <select
-                value={modelType}
-                onChange={(e) =>
-                  setModelType(e.target.value as DeepLModelType)
-                }
-                className="w-full p-2.5 rounded-xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] outline-none text-sm"
-              >
-                <option value="quality_optimized">Quality optimized</option>
-                <option value="prefer_quality_optimized">
-                  Prefer quality optimized
-                </option>
-                <option value="latency_optimized">Latency optimized</option>
-              </select>
+              <div className="relative group">
+                <select
+                  value={modelType}
+                  onChange={(e) =>
+                    setModelType(e.target.value as DeepLModelType)
+                  }
+                  className="w-full p-2.5 pr-9 rounded-xl border border-outline/40 bg-surface text-on-surface outline-none text-sm appearance-none cursor-pointer transition-all"
+                >
+                  <option value="quality_optimized" className="bg-surface">Quality optimized</option>
+                  <option value="prefer_quality_optimized" className="bg-surface">
+                    Prefer quality optimized
+                  </option>
+                  <option value="latency_optimized" className="bg-surface">Latency optimized</option>
+                </select>
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-on-surface-variant pointer-events-none group-focus-within:rotate-180 transition-transform" />
+              </div>
             </div>
 
             {/* Split sentences */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wide">
+              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">
                 Split sentences
               </label>
-              <select
-                value={splitSentences}
-                onChange={(e) =>
-                  setSplitSentences(e.target.value as DeepLSplitSentences)
-                }
-                className="w-full p-2.5 rounded-xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] outline-none text-sm"
-              >
-                <option value="0">No splitting</option>
-                <option value="1">Split on punctuation (default)</option>
-                <option value="nonewlines">
-                  Split on punctuation, not newlines
-                </option>
-              </select>
+              <div className="relative group">
+                <select
+                  value={splitSentences}
+                  onChange={(e) =>
+                    setSplitSentences(e.target.value as DeepLSplitSentences)
+                  }
+                  className="w-full p-2.5 pr-9 rounded-xl border border-outline/40 bg-surface text-on-surface outline-none text-sm appearance-none cursor-pointer transition-all"
+                >
+                  <option value="0" className="bg-surface">No splitting</option>
+                  <option value="1" className="bg-surface">Split on punctuation (default)</option>
+                  <option value="nonewlines" className="bg-surface">
+                    Split on punctuation, not newlines
+                  </option>
+                </select>
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-on-surface-variant pointer-events-none group-focus-within:rotate-180 transition-transform" />
+              </div>
             </div>
 
             {/* Preserve formatting */}
             <div className="flex flex-col gap-1 justify-center">
-              <label className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wide mb-1">
+              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide mb-1">
                 Preserve formatting
               </label>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={preserveFormatting}
-                  onChange={(e) => setPreserveFormatting(e.target.checked)}
-                  className="w-4 h-4 rounded accent-[var(--md-sys-color-primary)]"
-                />
-                <span className="text-sm text-[var(--md-sys-color-on-surface)]">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={preserveFormatting}
+                    onChange={(e) => setPreserveFormatting(e.target.checked)}
+                    className="w-4 h-4 rounded border-outline/40 bg-surface accent-primary cursor-pointer transition-all"
+                  />
+                </div>
+                <span className="text-sm text-on-surface group-hover:text-primary transition-colors">
                   Keep original formatting
                 </span>
               </label>
@@ -447,7 +463,7 @@ export function TranslationCard({
         <button
           onClick={() => void translate()}
           disabled={isTranslating || !sourceText.trim()}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] px-8 py-3 rounded-2xl font-bold hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-primary text-on-primary px-8 py-3 rounded-2xl font-bold hover:opacity-90 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-md shadow-primary/20"
         >
           {isTranslating ? (
             <>
@@ -464,9 +480,9 @@ export function TranslationCard({
 
         {/* Output */}
         {translatedText && (
-          <div className="space-y-2">
+          <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-[var(--md-sys-color-on-surface-variant)] uppercase tracking-wide">
+              <label className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">
                 Translation
               </label>
               <button
@@ -474,8 +490,8 @@ export function TranslationCard({
                 className={cn(
                   "flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl transition-colors",
                   isCopied
-                    ? "text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]"
-                    : "text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-highest)]",
+                    ? "text-primary bg-primary-container"
+                    : "text-on-surface-variant hover:bg-surface-container-highest",
                 )}
                 aria-label={isCopied ? "Copied" : "Copy translation"}
               >
@@ -491,7 +507,7 @@ export function TranslationCard({
               readOnly
               rows={5}
               value={translatedText}
-              className="w-full p-4 rounded-2xl border border-[color:var(--md-sys-color-outline)]/20 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] outline-none resize-none text-sm leading-relaxed"
+              className="w-full p-4 rounded-2xl border border-outline/20 bg-surface text-on-surface outline-none resize-none text-sm leading-relaxed"
             />
           </div>
         )}

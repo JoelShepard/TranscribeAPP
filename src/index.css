@@ -8,6 +8,24 @@
 @theme {
   --color-primary: #3b82f6;
   --color-secondary: #10b981;
+  --color-surface: var(--md-sys-color-surface);
+  --color-on-surface: var(--md-sys-color-on-surface);
+  --color-surface-container: var(--md-sys-color-surface-container);
+  --color-surface-container-high: var(--md-sys-color-surface-container-high);
+  --color-surface-container-highest: var(--md-sys-color-surface-container-highest);
+  --color-surface-container-low: var(--md-sys-color-surface-container-low);
+  --color-on-surface-variant: var(--md-sys-color-on-surface-variant);
+  --color-outline: var(--md-sys-color-outline);
+  --color-primary-container: var(--md-sys-color-primary-container);
+  --color-on-primary-container: var(--md-sys-color-on-primary-container);
+  --color-secondary-container: var(--md-sys-color-secondary-container);
+  --color-on-secondary-container: var(--md-sys-color-on-secondary-container);
+  --color-tertiary: var(--md-sys-color-tertiary);
+  --color-on-tertiary: var(--md-sys-color-on-tertiary);
+  --color-tertiary-container: var(--md-sys-color-tertiary-container);
+  --color-on-tertiary-container: var(--md-sys-color-on-tertiary-container);
+  --color-error-container: var(--md-sys-color-error-container);
+  --color-on-error-container: var(--md-sys-color-on-error-container);
 }
 
 :root {
@@ -17,10 +35,15 @@
   --md-sys-color-on-primary-container: #001452;
   --md-sys-color-secondary-container: #dfe2f9;
   --md-sys-color-on-secondary-container: #151b35;
+  --md-sys-color-tertiary: #5d5c8d;
+  --md-sys-color-on-tertiary: #ffffff;
+  --md-sys-color-tertiary-container: #e3dfff;
+  --md-sys-color-on-tertiary-container: #191946;
   --md-sys-color-surface: #f7f8ff;
   --md-sys-color-surface-container: #eceffd;
   --md-sys-color-surface-container-high: #e5e8f7;
   --md-sys-color-surface-container-highest: #dde0ef;
+  --md-sys-color-surface-container-low: #f1f3fb;
   --md-sys-color-on-surface: #1a1c23;
   --md-sys-color-on-surface-variant: #444857;
   --md-sys-color-outline: #74798b;
@@ -35,10 +58,15 @@
   --md-sys-color-on-primary-container: #dde1ff;
   --md-sys-color-secondary-container: #3d4160;
   --md-sys-color-on-secondary-container: #dde1ff;
+  --md-sys-color-tertiary: #c6c3ff;
+  --md-sys-color-on-tertiary: #2e2d5c;
+  --md-sys-color-tertiary-container: #454473;
+  --md-sys-color-on-tertiary-container: #e3dfff;
   --md-sys-color-surface: #11131b;
   --md-sys-color-surface-container: #1a1d27;
   --md-sys-color-surface-container-high: #222533;
   --md-sys-color-surface-container-highest: #2c3040;
+  --md-sys-color-surface-container-low: #141721;
   --md-sys-color-on-surface: #e2e2ec;
   --md-sys-color-on-surface-variant: #c4c6d6;
   --md-sys-color-outline: #8d91a3;
@@ -48,6 +76,17 @@
 
 body {
   font-family: "Nunito Sans", "Segoe UI", sans-serif;
+  overscroll-behavior: none;
+}
+
+/* Hide scrollbar for a more native feel in Tauri */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, and Opera */
 }
 
 .audio-visualizer {

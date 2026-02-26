@@ -16,6 +16,7 @@ import {
   Languages,
   Eye,
   EyeOff,
+  ChevronDown,
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -870,60 +871,63 @@ export default function App() {
 
                   {/* Default target language */}
                   <div className="mt-4">
-                    <label className="block text-sm font-semibold text-[var(--md-sys-color-on-surface)] mb-2">
+                    <label className="block text-sm font-semibold text-on-surface mb-2">
                       Default translation target language
                     </label>
-                    <select
-                      value={deepLDefaultTargetLang}
-                      onChange={(e) => {
-                        setDeepLDefaultTargetLang(e.target.value);
-                        localStorage.setItem(
-                          "deepl_default_target_lang",
-                          e.target.value,
-                        );
-                      }}
-                      className="w-full sm:w-72 p-3 rounded-2xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-tertiary)]/50 outline-none text-sm"
-                    >
-                      {[
-                        { code: "AR", name: "Arabic" },
-                        { code: "BG", name: "Bulgarian" },
-                        { code: "CS", name: "Czech" },
-                        { code: "DA", name: "Danish" },
-                        { code: "DE", name: "German" },
-                        { code: "EL", name: "Greek" },
-                        { code: "EN-GB", name: "English (British)" },
-                        { code: "EN-US", name: "English (American)" },
-                        { code: "ES", name: "Spanish" },
-                        { code: "ET", name: "Estonian" },
-                        { code: "FI", name: "Finnish" },
-                        { code: "FR", name: "French" },
-                        { code: "HU", name: "Hungarian" },
-                        { code: "ID", name: "Indonesian" },
-                        { code: "IT", name: "Italian" },
-                        { code: "JA", name: "Japanese" },
-                        { code: "KO", name: "Korean" },
-                        { code: "LT", name: "Lithuanian" },
-                        { code: "LV", name: "Latvian" },
-                        { code: "NB", name: "Norwegian (Bokmål)" },
-                        { code: "NL", name: "Dutch" },
-                        { code: "PL", name: "Polish" },
-                        { code: "PT-BR", name: "Portuguese (Brazilian)" },
-                        { code: "PT-PT", name: "Portuguese (European)" },
-                        { code: "RO", name: "Romanian" },
-                        { code: "RU", name: "Russian" },
-                        { code: "SK", name: "Slovak" },
-                        { code: "SL", name: "Slovenian" },
-                        { code: "SV", name: "Swedish" },
-                        { code: "TR", name: "Turkish" },
-                        { code: "UK", name: "Ukrainian" },
-                        { code: "ZH-HANS", name: "Chinese (Simplified)" },
-                        { code: "ZH-HANT", name: "Chinese (Traditional)" },
-                      ].map((l) => (
-                        <option key={l.code} value={l.code}>
-                          {l.name}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative group w-full sm:w-72">
+                      <select
+                        value={deepLDefaultTargetLang}
+                        onChange={(e) => {
+                          setDeepLDefaultTargetLang(e.target.value);
+                          localStorage.setItem(
+                            "deepl_default_target_lang",
+                            e.target.value,
+                          );
+                        }}
+                        className="w-full p-3 pr-10 rounded-2xl border border-outline/40 bg-surface text-on-surface focus:ring-2 focus:ring-primary/50 outline-none text-sm appearance-none cursor-pointer transition-all"
+                      >
+                        {[
+                          { code: "AR", name: "Arabic" },
+                          { code: "BG", name: "Bulgarian" },
+                          { code: "CS", name: "Czech" },
+                          { code: "DA", name: "Danish" },
+                          { code: "DE", name: "German" },
+                          { code: "EL", name: "Greek" },
+                          { code: "EN-GB", name: "English (British)" },
+                          { code: "EN-US", name: "English (American)" },
+                          { code: "ES", name: "Spanish" },
+                          { code: "ET", name: "Estonian" },
+                          { code: "FI", name: "Finnish" },
+                          { code: "FR", name: "French" },
+                          { code: "HU", name: "Hungarian" },
+                          { code: "ID", name: "Indonesian" },
+                          { code: "IT", name: "Italian" },
+                          { code: "JA", name: "Japanese" },
+                          { code: "KO", name: "Korean" },
+                          { code: "LT", name: "Lithuanian" },
+                          { code: "LV", name: "Latvian" },
+                          { code: "NB", name: "Norwegian (Bokmål)" },
+                          { code: "NL", name: "Dutch" },
+                          { code: "PL", name: "Polish" },
+                          { code: "PT-BR", name: "Portuguese (Brazilian)" },
+                          { code: "PT-PT", name: "Portuguese (European)" },
+                          { code: "RO", name: "Romanian" },
+                          { code: "RU", name: "Russian" },
+                          { code: "SK", name: "Slovak" },
+                          { code: "SL", name: "Slovenian" },
+                          { code: "SV", name: "Swedish" },
+                          { code: "TR", name: "Turkish" },
+                          { code: "UK", name: "Ukrainian" },
+                          { code: "ZH-HANS", name: "Chinese (Simplified)" },
+                          { code: "ZH-HANT", name: "Chinese (Traditional)" },
+                        ].map((l) => (
+                          <option key={l.code} value={l.code} className="bg-surface text-on-surface">
+                            {l.name}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant pointer-events-none group-focus-within:rotate-180 transition-transform" />
+                    </div>
                   </div>
 
                   <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-3">
@@ -1120,7 +1124,7 @@ export default function App() {
             </div>
             <div className="p-6">
               <textarea
-                className="w-full h-96 p-4 rounded-2xl text-[var(--md-sys-color-on-surface)] bg-[var(--md-sys-color-surface)] leading-relaxed outline-none resize-none border border-[color:var(--md-sys-color-outline)]/20"
+                className="w-full h-96 p-4 rounded-2xl text-on-surface bg-surface leading-relaxed outline-none resize-none border border-outline/20 focus:ring-2 focus:ring-primary/20 transition-all"
                 value={transcription}
                 onChange={(e) => setTranscription(e.target.value)}
               />
