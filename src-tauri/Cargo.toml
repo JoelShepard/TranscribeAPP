@@ -21,6 +21,8 @@ tauri-build = { version = "2.5.4", features = [] }
 log = "0.4"
 tauri = { version = "2.10.0", features = ["tray-icon"] }
 tauri-plugin-log = "2"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+serde_json = "1"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 cpal = "0.15"

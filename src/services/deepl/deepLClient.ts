@@ -91,7 +91,10 @@ export class DeepLClient {
     init: RequestInit = {},
   ): Promise<T> {
     const isTauri = isTauriRuntime();
-    const isCapacitor = isCapacitorRuntime();
+    // Check Tauri first: @capacitor/core sets window.Capacitor even when
+    // bundled in a Tauri build, so we must exclude Tauri before testing
+    // for Capacitor to avoid routing desktop traffic through CapacitorHttp.
+    const isCapacitor = !isTauri && isCapacitorRuntime();
 
     if (isCapacitor) {
       // Use CapacitorHttp to bypass CORS on Android/iOS
@@ -124,14 +127,65 @@ export class DeepLClient {
     };
 
     if (isTauri) {
-      // Direct call — Tauri CSP already whitelists both DeepL origins.
+      // DeepL API does not send Access-Control-Allow-Origin headers, so any
+      // fetch from the WebKit2GTK webview fails with a CORS error. We route
+      // the request through a dedicated Rust command (`deepl_request`) that
+      // uses `reqwest` on the Tauri side, completely bypassing the webview.
       url = `${this.baseUrl}${path}`;
       headers["Authorization"] = `DeepL-Auth-Key ${this.apiKey}`;
-    } else {
-      // Proxy call — browser cannot reach DeepL directly due to CORS.
-      url = `/deepl-proxy/${this.plan}${path}`;
-      headers["X-DeepL-Auth-Key"] = this.apiKey;
+
+      const { invoke } = await import("@tauri-apps/api/core");
+
+      let invokeResult: { status: number; body: string };
+      try {
+        invokeResult = await invoke<{ status: number; body: string }>(
+          "deepl_request",
+          {
+            url,
+            method: (init.method ?? "GET").toUpperCase(),
+            headers,
+            body: (init.body as string | undefined) ?? null,
+          },
+        );
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("[DeepLClient] Tauri invoke failed:", err);
+        throw new DeepLError(`Network error: ${msg}.`);
+      }
+
+      const { status, body } = invokeResult;
+      if (status < 200 || status >= 300) {
+        let message = `HTTP ${status}`;
+        if (status === 400) {
+          message = "Bad request — check source/target language codes.";
+        } else if (status === 403) {
+          message = "Authentication failed — check your DeepL API key.";
+        } else if (status === 404) {
+          message = "Requested resource not found.";
+        } else if (status === 413) {
+          message = "Request too large — text exceeds DeepL size limits.";
+        } else if (status === 429) {
+          message = "Too many requests — please wait before retrying.";
+        } else if (status === 456) {
+          message = "Quota exceeded — you have used up your character limit.";
+        } else if (status === 500) {
+          message = "DeepL internal server error.";
+        } else if (status === 529) {
+          message =
+            "DeepL is temporarily unavailable — please try again later.";
+        } else if (body) {
+          message = `HTTP ${status}: ${body}`;
+        }
+        throw new DeepLError(message, status);
+      }
+
+      return JSON.parse(body) as T;
     }
+
+    // Web browser path — DeepL cannot be reached directly due to CORS, so
+    // all requests are proxied through /deepl-proxy/<plan><path>.
+    url = `/deepl-proxy/${this.plan}${path}`;
+    headers["X-DeepL-Auth-Key"] = this.apiKey;
 
     const response = await fetch(url, { ...init, headers }).catch((err) => {
       console.error("[DeepLClient] Fetch failed:", err);
