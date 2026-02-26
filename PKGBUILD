@@ -8,6 +8,7 @@ url="https://github.com/JoelShepard/TranscribeAPP"
 license=('MIT')
 depends=('webkit2gtk-4.1' 'gtk3' 'libayatana-appindicator' 'gst-plugins-base-libs' 'gst-plugins-good' 'gst-plugins-bad')
 makedepends=('bun' 'rust' 'cargo')
+options=(!lto)
 source=()
 sha256sums=()
 
