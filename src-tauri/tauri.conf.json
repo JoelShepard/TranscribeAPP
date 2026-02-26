@@ -21,7 +21,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data: filesystem: tauri:; media-src 'self' blob: data: filesystem: tauri:; connect-src 'self' blob: data: tauri: https://api.mistral.ai"
+      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data: filesystem: tauri:; media-src 'self' blob: data: filesystem: tauri:; connect-src 'self' blob: data: tauri: https://api.mistral.ai https://api.deepl.com https://api-free.deepl.com"
     }
   },
   "bundle": {

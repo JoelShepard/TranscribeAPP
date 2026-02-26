@@ -61,17 +61,7 @@ This document serves as the primary instruction set for AI agents and developers
 
 - **Version:** TailwindCSS v4.
 - **Usage:** Use utility classes directly in JSX.
-- **Conditional Classes:** Use `clsx` and `tailwind-merge`.
-
-  ```tsx
-  import { clsx } from "clsx";
-  import { twMerge } from "tailwind-merge";
-
-  export function cn(...inputs: ClassValue[]) {
-    return twMerge(clsx(inputs));
-  }
-  // Usage: className={cn("base-class", condition && "active-class")}
-  ```
+- **Conditional Classes:** Use `clsx` and `tailwind-merge` (`cn()` utility pattern).
 
 ### Naming Conventions
 
@@ -96,10 +86,7 @@ This document serves as the primary instruction set for AI agents and developers
 
 - **Async Operations:** Wrap all async service calls (API, FS, Audio) in `try/catch`.
 - **UI Feedback:** Always reflect error states in the UI (e.g., set `status` state to `'error'` and display a message).
-- **Logging:** Log errors to console with context.
-  ```ts
-  console.error("[ServiceName] Error performing action:", err);
-  ```
+- **Logging:** Log errors to console with context: `console.error("[ServiceName] Error performing action:", err)`.
 
 ## 6. Anti-Regression Rules
 
@@ -205,59 +192,29 @@ The application uses a custom sticky header that sits below the window title bar
 ## 7. Workflow Rules for Agents
 
 1.  **Read First:** Always read `package.json` and `README.md` to understand current context.
-2.  **Branch First:** Before making any change to source code (`src/`, `src-tauri/`, `android/`), create a dedicated branch from an up-to-date `main`. Never commit source changes directly to `main`. See §9 for the full branching model.
-3.  **Conventional Commits:** Every commit message must follow the Conventional Commits standard defined in §9.5. Messages like `"wip"`, `"fix stuff"`, or `"iteration 3"` are not acceptable.
-4.  **Build Before PR:** Run `bun test && bun run build` locally and ensure both pass before opening a Pull Request. A PR that breaks CI is a blocking error.
+2.  **Branch First:** Create a dedicated branch from up-to-date `main` before any source change. Follow the full branching model in §9.
+3.  **Conventional Commits:** Every commit must follow §9.5. Messages like `"wip"` or `"fix stuff"` are not acceptable.
+4.  **Build Before PR:** `bun test && bun run build` must pass before opening a Pull Request.
 5.  **PR Before Merge:** No code reaches `main` without an open PR and a green `ci-tests.yml` run. Direct pushes to `main` for source changes are forbidden.
 6.  **Verify:** After making changes, run `bun run build` to ensure no compilation errors.
 7.  **Clean Up:** Remove unused files or imports introduced during refactoring.
 8.  **No Placeholders:** Implementation should be complete. If a placeholder is strictly necessary, mark it with `TODO:`.
 9.  **Milestones Execution:** Upon start, read the `MILESTONES.md` file. Start working on the first unchecked milestone (`[ ]`). Once completed, update `MILESTONES.md` to mark it as checked (`[x]`).
-10. **Release Branch Hygiene:** Before creating/pushing a release tag, run `git status --short`. If there are modified tracked source files (e.g. `src/**`, `src-tauri/**`), do not publish until they are either committed intentionally or explicitly excluded by the user.
+10. **Release Branch Hygiene:** Before creating/pushing a release tag, run `git status --short`. If there are modified tracked source files, do not publish until they are committed or explicitly excluded.
 11. **Desktop Release Verification:** After a release build, verify that the Linux binary artifact is present and valid in GitHub Releases.
 
 ## 8. Repository & CI/CD (GitHub)
 
-- **Git Hosting:** The canonical remote is GitHub (`git@github.com:JoelShepard/TranscribeAPP.git`).
-- **Container Registry:** Docker images are published to **GHCR** (`ghcr.io`).
-- **Workflow File:** Use `.github/workflows/publish-ghcr.yml` for container build/publish.
+- **Git Hosting:** `git@github.com:JoelShepard/TranscribeAPP.git`
+- **Container Registry:** GHCR (`ghcr.io`). Image names must be lowercase.
 - **Trigger Policy:** All release workflows run only on pushes of tags matching `v*`.
 - **Auth Policy:** Prefer `${{ secrets.GITHUB_TOKEN }}` for GHCR publish. Do not introduce a PAT unless explicitly required.
-- **Naming:** GHCR image names must be lowercase (`ghcr.io/<owner>/<repo>`).
-
-### Release Tag Push Flow
-
-To trigger all release workflows, create and push an annotated version tag after pushing `main`:
-
-```bash
-git add .
-git commit -m "chore: prepare release"
-git push origin main
-git tag -a vX.Y.Z -m "Release vX.Y.Z"
-git push origin vX.Y.Z
-```
-
-Compact variant:
-
-```bash
-git commit -m "chore: prepare release"
-git tag -a vX.Y.Z -m "Release vX.Y.Z"
-git push origin main --follow-tags
-```
 
 ## 9. Git Branching & Development Workflow
 
 This section defines the authoritative, end-to-end Git workflow for this repository. Its primary goal is to guarantee that `main` is always stable, buildable, and production-ready. All feature development, bug fixing, and release preparation happens in isolated branches and lands on `main` exclusively through reviewed Pull Requests.
 
 ### 9.1 Branch Model
-
-The repository uses a three-tier branch model:
-
-| Tier | Branch Pattern | Scope | Lifetime | Merges Into |
-| :--- | :------------- | :---- | :------- | :---------- |
-| **Stable** | `main` | Production-ready state of the codebase | Permanent | — |
-| **Work** | `feat/*`, `fix/*`, `chore/*`, `refactor/*`, `docs/*`, `test/*`, `ci/*`, `perf/*` | Single unit of work (one feature, one fix) | Short (hours to days) | `main` via PR |
-| **Release** | `release/vX.Y.Z` | Version freeze, version bump, changelog | Very short (hours) | `main` via PR, then tagged |
 
 **Branch naming convention — mandatory:**
 
@@ -277,91 +234,15 @@ Names must be lowercase, hyphen-separated, and descriptive. No numbers-only name
 
 ### 9.2 Feature Branch Lifecycle
 
-Every unit of work follows these steps in order. Do not skip or reorder them.
+Every unit of work follows these steps in order:
 
-**Step 1 — Sync from main:**
-```bash
-git checkout main
-git pull origin main
-```
-Always start from the latest `main`. Never branch from a stale local copy.
-
-**Step 2 — Create the branch:**
-```bash
-git checkout -b feat/my-feature-name
-```
-
-**Step 3 — Develop with atomic commits:**
-
-Make small, focused commits as you work. Each commit should represent a single logical change that leaves the code in a coherent state. Use the Conventional Commits format (§9.5) for every commit message.
-
-```bash
-# Good: atomic, descriptive
-git commit -m "feat(audio): add waveform canvas component"
-git commit -m "feat(audio): wire waveform to MediaRecorder stream"
-
-# Bad: vague, non-atomic
-git commit -m "wip"
-git commit -m "more changes"
-```
-
-**Step 4 — Validate locally before pushing:**
-```bash
-bun test && bun run build
-```
-Both must pass with zero errors. A branch that breaks the build must not be pushed.
-
-**Step 5 — Push the branch to origin:**
-```bash
-git push -u origin feat/my-feature-name
-```
-
-**Step 6 — Open a Pull Request:**
-```bash
-gh pr create \
-  --title "feat(audio): add waveform visualizer" \
-  --body "$(cat <<'EOF'
-## Description
-Adds a real-time waveform canvas that renders microphone input during recording.
-
-## Type of change
-- [x] feat: new functionality
-- [ ] fix: bug correction
-- [ ] chore/refactor: maintenance
-
-## Local validation
-- [x] `bun test` passes
-- [x] `bun run build` passes
-
-## Anti-regression checks (§6)
-- [x] No changes to the dual recording path (§6.3)
-- [x] No changes to CSP (§6.2)
-- [x] No partial version bump (§6.1)
-EOF
-)"
-```
-
-**Step 7 — Wait for CI:**
-
-The `ci-tests.yml` workflow must complete with a green status before any merge is considered. A red CI run is a hard blocker. Fix the issue on the branch, push again, and wait for the CI to re-run.
-
-**Step 8 — Squash and merge into main:**
-
-Use **Squash and Merge** exclusively. This collapses all branch commits into one clean, atomic commit on `main`. The resulting commit message must follow Conventional Commits format.
-
-```bash
-# Via GitHub CLI
-gh pr merge <PR-NUMBER> --squash --delete-branch
-```
-
-The `--delete-branch` flag is mandatory. Remote branches must be cleaned up immediately after merge.
-
-**Step 9 — Clean up local branch:**
-```bash
-git checkout main
-git pull origin main
-git branch -d feat/my-feature-name
-```
+1. **Sync:** Pull latest `main` before branching. Never start from a stale local copy.
+2. **Branch:** `git checkout -b <prefix>/description` using the naming convention above.
+3. **Commit:** Make small, atomic commits using Conventional Commits format (§9.5).
+4. **Validate:** `bun test && bun run build` must pass with zero errors before pushing.
+5. **Push & PR:** Open a PR using the checklist template in §9.4. Wait for green `ci-tests.yml`.
+6. **Squash merge:** Use `gh pr merge <PR> --squash --delete-branch` exclusively. The squash commit message must follow Conventional Commits.
+7. **Clean up:** Delete the local branch after merge and pull updated `main`.
 
 ### 9.3 Golden Rules for `main`
 
@@ -380,12 +261,7 @@ These rules are absolute. Any agent or developer violating them introduces insta
 
 The only files that may be committed directly to `main` without a PR are pure documentation files with no runtime impact: `AGENTS.md`, `README.md`, `MILESTONES.md`. Even for these, a branch is strongly preferred.
 
-**Invariant:** After every merge, `bun run build` on `main` must succeed. If it does not, the merge must be reverted immediately:
-
-```bash
-git revert <merge-commit-sha>
-git push origin main
-```
+**Invariant:** After every merge, `bun run build` on `main` must succeed. If it does not, revert the merge commit immediately and push to `main`.
 
 ### 9.4 Pull Request Checklist
 
@@ -423,30 +299,26 @@ Every PR body must include the following checklist. Copy it verbatim and check o
 
 ### 9.5 Conventional Commits Standard
 
-Every commit message in this repository — whether on a feature branch or the squash-merge commit landing on `main` — must follow this format:
+Every commit message must follow this format:
 
 ```
 <type>(<optional-scope>): <imperative description in lowercase>
 ```
 
-- **type**: one of the values from the table below (required).
-- **scope**: the part of the codebase affected, in parentheses (optional but recommended).
-- **description**: a short imperative phrase (max ~72 chars), lowercase, no trailing period.
-
 **Valid types:**
 
-| Type | When to use | Triggers SemVer |
-| :--- | :---------- | :-------------- |
-| `feat` | Adds a new user-facing feature | Minor bump |
-| `fix` | Corrects a bug | Patch bump |
-| `chore` | Build scripts, dependency updates, tooling, non-source maintenance | No bump |
-| `refactor` | Code restructuring with no change in external behavior | No bump |
-| `docs` | Documentation-only changes | No bump |
-| `test` | Adding or modifying tests | No bump |
-| `ci` | Changes to GitHub Actions workflows | No bump |
-| `perf` | Performance improvements | Patch bump |
+| Type | When to use |
+| :--- | :---------- |
+| `feat` | Adds a new user-facing feature |
+| `fix` | Corrects a bug |
+| `chore` | Build scripts, dependency updates, tooling, non-source maintenance |
+| `refactor` | Code restructuring with no change in external behavior |
+| `docs` | Documentation-only changes |
+| `test` | Adding or modifying tests |
+| `ci` | Changes to GitHub Actions workflows |
+| `perf` | Performance improvements |
 
-**Examples — correct:**
+**Examples:**
 
 ```
 feat(audio): add real-time waveform visualizer during recording
@@ -454,24 +326,9 @@ fix(tauri): resolve TypeError on Mistral API call due to missing CSP entry
 chore(deps): update bun to 1.4.0 and audit lockfile
 refactor(settings): extract API key input into dedicated hook
 ci: pin ubuntu-22.04 in linux release workflow
-docs(agents): add §9 git branching workflow
-test(audio): add edge case for zero-duration file uploads
-perf(build): enable bun bundler minification for production
 ```
 
-**Examples — forbidden:**
-
-```
-wip
-fix stuff
-update
-more changes
-iteration 3
-Ralph iteration 5: work in progress
-final fix
-```
-
-**Breaking changes:** If a commit introduces a breaking change (requires a major version bump), append `!` after the type and add a `BREAKING CHANGE:` footer:
+**Breaking changes:** append `!` after the type and add a `BREAKING CHANGE:` footer:
 
 ```
 feat(api)!: replace Mistral client with multi-provider interface
