@@ -346,13 +346,70 @@ fn toggle_main_window(app_handle: &tauri::AppHandle) {
     }
 }
 
+/// Makes an HTTP request to the DeepL API from the Rust side.
+/// This bypasses the WebKit2GTK CORS restrictions that block DeepL in the
+/// Tauri webview (DeepL does not send Access-Control-Allow-Origin headers).
+#[tauri::command]
+async fn deepl_request(
+    url: String,
+    method: String,
+    headers: std::collections::HashMap<String, String>,
+    body: Option<String>,
+) -> Result<serde_json::Value, String> {
+    use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+
+    let client = reqwest::Client::builder()
+        .use_rustls_tls()
+        .build()
+        .map_err(|e| format!("[deepl_request] Failed to build HTTP client: {e}"))?;
+
+    let mut header_map = HeaderMap::new();
+    for (k, v) in &headers {
+        let name = HeaderName::from_bytes(k.as_bytes())
+            .map_err(|e| format!("[deepl_request] Invalid header name '{k}': {e}"))?;
+        let value = HeaderValue::from_str(v)
+            .map_err(|e| format!("[deepl_request] Invalid header value for '{k}': {e}"))?;
+        header_map.insert(name, value);
+    }
+
+    let req_builder = match method.to_uppercase().as_str() {
+        "GET" => client.get(&url).headers(header_map),
+        "POST" => {
+            let mut b = client.post(&url).headers(header_map);
+            if let Some(body_str) = body {
+                b = b.body(body_str);
+            }
+            b
+        }
+        other => {
+            return Err(format!(
+                "[deepl_request] Unsupported HTTP method: {other}"
+            ))
+        }
+    };
+
+    let resp = req_builder
+        .send()
+        .await
+        .map_err(|e| format!("[deepl_request] Request failed: {e}"))?;
+
+    let status = resp.status().as_u16();
+    let text = resp
+        .text()
+        .await
+        .map_err(|e| format!("[deepl_request] Failed to read response body: {e}"))?;
+
+    Ok(serde_json::json!({ "status": status, "body": text }))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(RecorderState::default())
         .invoke_handler(tauri::generate_handler![
             start_native_recording,
-            stop_native_recording
+            stop_native_recording,
+            deepl_request
         ])
         .setup(|app| {
             let log_level = if cfg!(debug_assertions) {

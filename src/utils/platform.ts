@@ -9,7 +9,14 @@ export function isTauriRuntime(): boolean {
 }
 
 export function isCapacitorRuntime(): boolean {
-  return typeof window !== "undefined" && Boolean((window as any).Capacitor);
+  // Check isNativePlatform() rather than mere presence of window.Capacitor:
+  // @capacitor/core sets window.Capacitor when bundled, even in Tauri/browser
+  // environments, where isNative is false. Using isNativePlatform() ensures
+  // this only returns true on actual Android/iOS native builds.
+  return (
+    typeof window !== "undefined" &&
+    Boolean((window as any).Capacitor?.isNativePlatform?.())
+  );
 }
 
 export function isNativeRuntime(): boolean {
