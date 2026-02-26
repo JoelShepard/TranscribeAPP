@@ -1,1 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎙️</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect x="10" y="10" width="80" height="80" rx="20" fill="#2750C4" />
+  <g fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round">
+    <path d="M35 48v4" />
+    <path d="M41 43v14" />
+    <path d="M47 38v24" />
+    <path d="M53 45v10" />
+    <path d="M59 41v18" />
+    <path d="M65 48v4" />
+  </g>
+</svg>
