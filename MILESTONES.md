@@ -69,7 +69,7 @@ This section tracks the full implementation of the DeepL-powered translation fea
 - [x] **Anti-regression**: Verify §6.2 — both DeepL endpoints are in `connect-src` after CSP update.
 - [x] **Anti-regression**: Verify §6.3 — no impact on dual recording paths after UI changes.
 - [x] **Anti-regression**: Verify §6.10 — header layout still has `mb-14` after adding new card.
-- [ ] **Release**: All milestones 7.1–7.8 completed, `bun test && bun run build` green, PR reviewed and merged before tagging.
+- [x] **Release**: All milestones 7.1–7.8 completed, `bun test && bun run build` green, PR reviewed and merged before tagging.
 
 ---
 
