@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   Mic,
   FileAudio,
@@ -13,14 +13,23 @@ import {
   AudioLines,
   ExternalLink,
   CheckCircle2,
+  Languages,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { invoke } from "@tauri-apps/api/core";
 import { audioProcessor } from "./services/audio/AudioProcessor";
 import { MistralClient } from "./services/mistral/MistralClient";
+import {
+  DeepLClient,
+  type DeepLPlan,
+  type DeepLUsage,
+} from "./services/deepl/deepLClient";
 import { useTheme } from "./context/ThemeContext";
 import { TitleBar } from "./components/TitleBar";
+import { TranslationCard } from "./components/TranslationCard";
 import { isTauriRuntime } from "./utils/platform";
 import {
   ERROR_MESSAGES,
@@ -102,7 +111,26 @@ function getErrorDetails(err: unknown): string {
 
 export default function App() {
   const { theme, toggleTheme } = useTheme();
+
+  // ── Mistral ─────────────────────────────────────────────────────────────
   const [apiKey, setApiKey] = useState("");
+  const [isApiKeyVerified, setIsApiKeyVerified] = useState(false);
+  const [isSavingApiKey, setIsSavingApiKey] = useState(false);
+
+  // ── DeepL ────────────────────────────────────────────────────────────────
+  const [deepLApiKey, setDeepLApiKey] = useState("");
+  const [deepLPlan, setDeepLPlan] = useState<DeepLPlan>("free");
+  const [deepLDefaultTargetLang, setDeepLDefaultTargetLang] = useState("EN-US");
+  const [isDeepLKeyVerified, setIsDeepLKeyVerified] = useState(false);
+  const [isTestingDeepL, setIsTestingDeepL] = useState(false);
+  const [deepLUsage, setDeepLUsage] = useState<DeepLUsage | null>(null);
+  const [deepLTestError, setDeepLTestError] = useState("");
+  const [showDeepLKey, setShowDeepLKey] = useState(false);
+  const [showMistralKey, setShowMistralKey] = useState(false);
+  // Text to pre-fill in TranslationCard (set when user clicks "Translate result")
+  const [translationInitialText, setTranslationInitialText] = useState("");
+
+  // ── UI state ─────────────────────────────────────────────────────────────
   const [showSettings, setShowSettings] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [progress, setProgress] = useState("");
@@ -110,8 +138,6 @@ export default function App() {
   const [error, setError] = useState("");
   const [tauriEnv, setTauriEnv] = useState(() => isTauriRuntime());
   const [linuxEnv, setLinuxEnv] = useState(false);
-  const [isApiKeyVerified, setIsApiKeyVerified] = useState(false);
-  const [isSavingApiKey, setIsSavingApiKey] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
@@ -121,9 +147,8 @@ export default function App() {
   const mediaMimeTypeRef = useRef("audio/webm");
   const chunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
+  const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const translationCardRef = useRef<HTMLDivElement | null>(null);
 
   const visualizerBars = useMemo(
     () => Array.from({ length: 8 }, (_, index) => index),
@@ -131,18 +156,35 @@ export default function App() {
   );
   const hasVerifiedApiKey = isApiKeyVerified;
 
+  // ── Bootstrap ────────────────────────────────────────────────────────────
   useEffect(() => {
     setTauriEnv(isTauriRuntime());
     setLinuxEnv(isLinuxPlatform());
-    const storedKey = localStorage.getItem("mistral_api_key");
-    const storedVerified =
+
+    const storedMistralKey = localStorage.getItem("mistral_api_key");
+    const storedMistralVerified =
       localStorage.getItem("mistral_api_key_verified") === "true";
-    if (storedKey) {
-      setApiKey(storedKey);
-      setIsApiKeyVerified(storedVerified);
+    if (storedMistralKey) {
+      setApiKey(storedMistralKey);
+      setIsApiKeyVerified(storedMistralVerified);
     }
+
+    const storedDeepLKey = localStorage.getItem("deepl_api_key");
+    const storedDeepLPlan =
+      (localStorage.getItem("deepl_plan") as DeepLPlan) ?? "free";
+    const storedDeepLTarget =
+      localStorage.getItem("deepl_default_target_lang") ?? "EN-US";
+    const storedDeepLVerified =
+      localStorage.getItem("deepl_api_key_verified") === "true";
+    if (storedDeepLKey) {
+      setDeepLApiKey(storedDeepLKey);
+      setIsDeepLKeyVerified(storedDeepLVerified);
+    }
+    setDeepLPlan(storedDeepLPlan);
+    setDeepLDefaultTargetLang(storedDeepLTarget);
   }, []);
 
+  // ── Mistral settings ─────────────────────────────────────────────────────
   const saveSettings = async () => {
     const trimmedApiKey = apiKey.trim();
     if (!trimmedApiKey) {
@@ -179,6 +221,57 @@ export default function App() {
     }
   };
 
+  // ── DeepL settings ───────────────────────────────────────────────────────
+  const handleDeepLKeyChange = (value: string) => {
+    setDeepLApiKey(value);
+    if (isDeepLKeyVerified) {
+      setIsDeepLKeyVerified(false);
+      localStorage.removeItem("deepl_api_key_verified");
+    }
+    setDeepLTestError("");
+  };
+
+  const saveDeepLSettings = () => {
+    const trimmed = deepLApiKey.trim();
+    localStorage.setItem("deepl_api_key", trimmed);
+    localStorage.setItem("deepl_plan", deepLPlan);
+    localStorage.setItem("deepl_default_target_lang", deepLDefaultTargetLang);
+  };
+
+  const testDeepLConnection = async () => {
+    const trimmedKey = deepLApiKey.trim();
+    if (!trimmedKey) {
+      setDeepLTestError("Please enter a DeepL API key.");
+      return;
+    }
+
+    setDeepLTestError("");
+    setIsTestingDeepL(true);
+    setDeepLUsage(null);
+
+    try {
+      const client = new DeepLClient(trimmedKey, deepLPlan);
+      const usage = await client.getUsage();
+      setDeepLUsage(usage);
+      setIsDeepLKeyVerified(true);
+      localStorage.setItem("deepl_api_key", trimmedKey);
+      localStorage.setItem("deepl_plan", deepLPlan);
+      localStorage.setItem("deepl_default_target_lang", deepLDefaultTargetLang);
+      localStorage.setItem("deepl_api_key_verified", "true");
+      setDeepLApiKey(trimmedKey);
+    } catch (err: unknown) {
+      console.error("[App] DeepL connection test failed:", err);
+      localStorage.removeItem("deepl_api_key_verified");
+      setIsDeepLKeyVerified(false);
+      const msg =
+        err instanceof Error ? err.message : "Connection test failed.";
+      setDeepLTestError(msg);
+    } finally {
+      setIsTestingDeepL(false);
+    }
+  };
+
+  // ── Settings keyboard handling ───────────────────────────────────────────
   const handleSettingsKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Escape") {
       e.preventDefault();
@@ -192,6 +285,7 @@ export default function App() {
     }
   };
 
+  // ── Audio handling ───────────────────────────────────────────────────────
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -388,15 +482,12 @@ export default function App() {
 
       console.log("[App] Getting audio duration...");
 
-      // 1. Get Duration and Decide logic
       const duration = await audioProcessor.getAudioDuration(file);
       console.log(`[App] Audio Duration: ${duration}s`);
 
       const client = new MistralClient(apiKey);
       let results: string[] = [];
 
-      // Thresholds: 15 mins (900s) or 25MB (approx check)
-      // We rely on duration mostly for splitting logic
       if (duration > 900) {
         console.log("[App] File exceeds 15 minutes, splitting...");
         setProgress("Splitting long audio file...");
@@ -407,7 +498,7 @@ export default function App() {
         for (let i = 0; i < chunks.length; i++) {
           console.log(`[App] Transcribing chunk ${i + 1}/${chunks.length}...`);
           setProgress(`Transcribing chunk ${i + 1} of ${chunks.length}...`);
-          const text = await client.transcribe(chunks[i]!); // Use ! assertion as we know it exists
+          const text = await client.transcribe(chunks[i]!);
           console.log(
             `[App] Chunk ${i + 1} transcribed, length: ${text.length} chars`,
           );
@@ -440,6 +531,8 @@ export default function App() {
       setTranscription(fullTranscription);
       setStatus("done");
       setProgress("");
+      // Reset translation pre-fill when a new transcription arrives
+      setTranslationInitialText("");
       console.log("[App] Process complete ✓");
     } catch (err: any) {
       console.error("[App] Error during processing:", err);
@@ -447,7 +540,6 @@ export default function App() {
 
       let errorMessage = err.message || ERROR_MESSAGES.processingFailed;
 
-      // Handle specifically 401 Unauthorized
       if (
         errorMessage.includes("401") ||
         errorMessage.toLowerCase().includes("unauthorized")
@@ -455,7 +547,7 @@ export default function App() {
         errorMessage = ERROR_MESSAGES.invalidApiKey;
         setIsApiKeyVerified(false);
         localStorage.removeItem("mistral_api_key_verified");
-        setShowSettings(true); // Auto-open settings
+        setShowSettings(true);
       }
 
       setError(errorMessage);
@@ -491,6 +583,20 @@ export default function App() {
     URL.revokeObjectURL(url);
   };
 
+  // ── "Translate result" CTA ───────────────────────────────────────────────
+  const handleTranslateResult = useCallback(() => {
+    setTranslationInitialText(transcription);
+    // Scroll to translation card after React renders
+    requestAnimationFrame(() => {
+      translationCardRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }, [transcription]);
+
+  const deepLKeyConfigured = deepLApiKey.trim().length > 0;
+
   return (
     <div
       className={cn(
@@ -518,6 +624,7 @@ export default function App() {
                   setStatus("idle");
                   setTranscription("");
                   setError("");
+                  setTranslationInitialText("");
                 }}
                 className="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity"
                 aria-label="Go to Home"
@@ -567,22 +674,6 @@ export default function App() {
               "rounded-[28px] border border-[color:var(--md-sys-color-outline)]/20 bg-[var(--md-sys-color-surface-container)]/90 backdrop-blur-sm px-5 shadow-[0_4px_16px_rgba(22,27,45,0.08)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.20)]";
             const paddingClass = tauriEnv ? "py-2" : "py-4";
 
-            if (tauriEnv) {
-              return (
-                <div
-                  className={cn(
-                    "flex gap-3",
-                    pillClass,
-                    paddingClass,
-                    "items-center justify-between",
-                  )}
-                >
-                  {logoContent}
-                  {actionsContent}
-                </div>
-              );
-            }
-
             return (
               <div
                 className={cn(
@@ -603,37 +694,223 @@ export default function App() {
               onKeyDown={handleSettingsKeyDown}
               className="mt-3 rounded-[30px] border border-[color:var(--md-sys-color-outline)]/30 bg-[var(--md-sys-color-surface-container)] p-6 animate-in slide-in-from-top-2 shadow-[0_8px_28px_rgba(22,27,45,0.10)] dark:shadow-[0_8px_28px_rgba(0,0,0,0.25)]"
             >
-              <div className="max-w-2xl mx-auto">
-                <label className="block text-base font-semibold text-[var(--md-sys-color-on-surface)] mb-2">
-                  Mistral API Key
-                </label>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-                  <div className="relative min-w-0">
-                    <input
-                      type="password"
-                      value={apiKey}
-                      onChange={(e) => handleApiKeyChange(e.target.value)}
-                      placeholder="Enter your API Key"
-                      className="w-full p-3.5 pr-11 rounded-2xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/50 outline-none"
-                    />
-                    {isSavingApiKey && (
-                      <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 animate-spin text-[var(--md-sys-color-on-surface-variant)]" />
-                    )}
-                    {!isSavingApiKey && isApiKeyVerified && (
-                      <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
-                    )}
+              <div className="max-w-2xl mx-auto space-y-8">
+                {/* ── Mistral section ── */}
+                <div>
+                  <h2 className="text-base font-bold text-[var(--md-sys-color-on-surface)] mb-4 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg bg-[var(--md-sys-color-primary)] flex items-center justify-center">
+                      <AudioLines className="w-3.5 h-3.5 text-[var(--md-sys-color-on-primary)]" />
+                    </span>
+                    Mistral API
+                  </h2>
+                  <label className="block text-sm font-semibold text-[var(--md-sys-color-on-surface)] mb-2">
+                    API Key
+                  </label>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                    <div className="relative min-w-0">
+                      <input
+                        type={showMistralKey ? "text" : "password"}
+                        value={apiKey}
+                        onChange={(e) => handleApiKeyChange(e.target.value)}
+                        placeholder="Enter your Mistral API Key"
+                        className="w-full p-3.5 pr-20 rounded-2xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-primary)]/50 outline-none"
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setShowMistralKey((v) => !v)}
+                          className="p-1 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]"
+                          aria-label={showMistralKey ? "Hide key" : "Show key"}
+                        >
+                          {showMistralKey ? (
+                            <EyeOff className="w-4 h-4" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
+                        </button>
+                        {isSavingApiKey && (
+                          <Loader2 className="w-5 h-5 animate-spin text-[var(--md-sys-color-on-surface-variant)]" />
+                        )}
+                        {!isSavingApiKey && isApiKeyVerified && (
+                          <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => void saveSettings()}
+                      disabled={isSavingApiKey}
+                      className="shrink-0 min-w-[9.25rem] bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] px-7 py-3 rounded-2xl hover:opacity-90 font-bold disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {isSavingApiKey ? "Checking..." : "Save"}
+                    </button>
                   </div>
-                  <button
-                    onClick={() => void saveSettings()}
-                    disabled={isSavingApiKey}
-                    className="shrink-0 min-w-[9.25rem] bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] px-7 py-3 rounded-2xl hover:opacity-90 font-bold disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    {isSavingApiKey ? "Checking..." : "Save"}
-                  </button>
+                  <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-2">
+                    Key is stored locally on your device.
+                  </p>
                 </div>
-                <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-3">
-                  Key is stored locally on your device.
-                </p>
+
+                {/* ── Divider ── */}
+                <div className="border-t border-[color:var(--md-sys-color-outline)]/20" />
+
+                {/* ── DeepL section ── */}
+                <div>
+                  <h2 className="text-base font-bold text-[var(--md-sys-color-on-surface)] mb-4 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg bg-[var(--md-sys-color-tertiary)] flex items-center justify-center">
+                      <Languages className="w-3.5 h-3.5 text-[var(--md-sys-color-on-tertiary)]" />
+                    </span>
+                    DeepL Translation
+                  </h2>
+
+                  {/* Plan toggle */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-semibold text-[var(--md-sys-color-on-surface)] mb-2">
+                      Plan
+                    </label>
+                    <div className="flex rounded-2xl overflow-hidden border border-[color:var(--md-sys-color-outline)]/40 w-fit">
+                      {(["free", "pro"] as const).map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => {
+                            setDeepLPlan(p);
+                            setIsDeepLKeyVerified(false);
+                            setDeepLUsage(null);
+                            localStorage.removeItem("deepl_api_key_verified");
+                          }}
+                          className={cn(
+                            "px-6 py-2.5 text-sm font-bold transition-colors capitalize",
+                            deepLPlan === p
+                              ? "bg-[var(--md-sys-color-tertiary)] text-[var(--md-sys-color-on-tertiary)]"
+                              : "bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface-variant)] hover:bg-[var(--md-sys-color-surface-container-high)]",
+                          )}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-1">
+                      Free plan uses{" "}
+                      <code className="font-mono">api-free.deepl.com</code>;
+                      Pro uses <code className="font-mono">api.deepl.com</code>.
+                    </p>
+                  </div>
+
+                  {/* API Key */}
+                  <label className="block text-sm font-semibold text-[var(--md-sys-color-on-surface)] mb-2">
+                    API Key
+                  </label>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                    <div className="relative min-w-0">
+                      <input
+                        type={showDeepLKey ? "text" : "password"}
+                        value={deepLApiKey}
+                        onChange={(e) => handleDeepLKeyChange(e.target.value)}
+                        placeholder="Enter your DeepL API Key"
+                        className="w-full p-3.5 pr-20 rounded-2xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-tertiary)]/50 outline-none"
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setShowDeepLKey((v) => !v)}
+                          className="p-1 text-[var(--md-sys-color-on-surface-variant)] hover:text-[var(--md-sys-color-on-surface)]"
+                          aria-label={showDeepLKey ? "Hide key" : "Show key"}
+                        >
+                          {showDeepLKey ? (
+                            <EyeOff className="w-4 h-4" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
+                        </button>
+                        {isTestingDeepL && (
+                          <Loader2 className="w-5 h-5 animate-spin text-[var(--md-sys-color-on-surface-variant)]" />
+                        )}
+                        {!isTestingDeepL && isDeepLKeyVerified && (
+                          <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => void testDeepLConnection()}
+                      disabled={isTestingDeepL}
+                      className="shrink-0 min-w-[9.25rem] bg-[var(--md-sys-color-tertiary)] text-[var(--md-sys-color-on-tertiary)] px-7 py-3 rounded-2xl hover:opacity-90 font-bold disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {isTestingDeepL ? "Testing..." : "Test connection"}
+                    </button>
+                  </div>
+                  {deepLTestError && (
+                    <p className="text-xs text-[var(--md-sys-color-error)] mt-2">
+                      {deepLTestError}
+                    </p>
+                  )}
+                  {deepLUsage && (
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2 font-semibold">
+                      {deepLUsage.character_count.toLocaleString()} /{" "}
+                      {deepLUsage.character_limit.toLocaleString()} characters
+                      used this billing period.
+                    </p>
+                  )}
+
+                  {/* Default target language */}
+                  <div className="mt-4">
+                    <label className="block text-sm font-semibold text-[var(--md-sys-color-on-surface)] mb-2">
+                      Default translation target language
+                    </label>
+                    <select
+                      value={deepLDefaultTargetLang}
+                      onChange={(e) => {
+                        setDeepLDefaultTargetLang(e.target.value);
+                        localStorage.setItem(
+                          "deepl_default_target_lang",
+                          e.target.value,
+                        );
+                      }}
+                      className="w-full sm:w-72 p-3 rounded-2xl border border-[color:var(--md-sys-color-outline)]/40 bg-[var(--md-sys-color-surface)] text-[var(--md-sys-color-on-surface)] focus:ring-2 focus:ring-[var(--md-sys-color-tertiary)]/50 outline-none text-sm"
+                    >
+                      {[
+                        { code: "AR", name: "Arabic" },
+                        { code: "BG", name: "Bulgarian" },
+                        { code: "CS", name: "Czech" },
+                        { code: "DA", name: "Danish" },
+                        { code: "DE", name: "German" },
+                        { code: "EL", name: "Greek" },
+                        { code: "EN-GB", name: "English (British)" },
+                        { code: "EN-US", name: "English (American)" },
+                        { code: "ES", name: "Spanish" },
+                        { code: "ET", name: "Estonian" },
+                        { code: "FI", name: "Finnish" },
+                        { code: "FR", name: "French" },
+                        { code: "HU", name: "Hungarian" },
+                        { code: "ID", name: "Indonesian" },
+                        { code: "IT", name: "Italian" },
+                        { code: "JA", name: "Japanese" },
+                        { code: "KO", name: "Korean" },
+                        { code: "LT", name: "Lithuanian" },
+                        { code: "LV", name: "Latvian" },
+                        { code: "NB", name: "Norwegian (Bokmål)" },
+                        { code: "NL", name: "Dutch" },
+                        { code: "PL", name: "Polish" },
+                        { code: "PT-BR", name: "Portuguese (Brazilian)" },
+                        { code: "PT-PT", name: "Portuguese (European)" },
+                        { code: "RO", name: "Romanian" },
+                        { code: "RU", name: "Russian" },
+                        { code: "SK", name: "Slovak" },
+                        { code: "SL", name: "Slovenian" },
+                        { code: "SV", name: "Swedish" },
+                        { code: "TR", name: "Turkish" },
+                        { code: "UK", name: "Ukrainian" },
+                        { code: "ZH-HANS", name: "Chinese (Simplified)" },
+                        { code: "ZH-HANT", name: "Chinese (Traditional)" },
+                      ].map((l) => (
+                        <option key={l.code} value={l.code}>
+                          {l.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <p className="text-xs text-[var(--md-sys-color-on-surface-variant)] mt-3">
+                    Key is stored locally on your device.
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -818,19 +1095,50 @@ export default function App() {
                 onChange={(e) => setTranscription(e.target.value)}
               />
             </div>
-            <div className="bg-[var(--md-sys-color-surface-container-high)] px-6 py-4 border-t border-[color:var(--md-sys-color-outline)]/30 text-center">
+            <div className="bg-[var(--md-sys-color-surface-container-high)] px-6 py-4 border-t border-[color:var(--md-sys-color-outline)]/30 flex flex-wrap items-center justify-between gap-3">
               <button
                 onClick={() => {
                   setStatus("idle");
+                  setTranslationInitialText("");
                 }}
                 className="text-[var(--md-sys-color-primary)] font-bold hover:opacity-80"
               >
                 Transcribe Another File
               </button>
+              {/* 7.5 — Translate result CTA */}
+              <button
+                onClick={handleTranslateResult}
+                className={cn(
+                  "flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-sm transition-all",
+                  deepLKeyConfigured
+                    ? "bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] hover:opacity-90"
+                    : "bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface-variant)] hover:opacity-80",
+                )}
+                title={
+                  deepLKeyConfigured
+                    ? "Translate with DeepL"
+                    : "Add a DeepL API key in Settings to translate"
+                }
+              >
+                <Languages className="w-4 h-4" />
+                Translate result
+              </button>
             </div>
           </div>
         )}
+
+        {/* Translation Card — always visible (below transcript when status=done, standalone otherwise) */}
+        <div ref={translationCardRef}>
+          <TranslationCard
+            apiKey={deepLApiKey}
+            plan={deepLPlan}
+            initialText={translationInitialText}
+            defaultTargetLang={deepLDefaultTargetLang}
+            usage={deepLUsage}
+          />
+        </div>
       </main>
+
       <footer className="w-full py-6 text-center text-sm text-[var(--md-sys-color-on-surface-variant)] opacity-60">
         <p>
           Version {pkg.version} • © 2026{" "}
