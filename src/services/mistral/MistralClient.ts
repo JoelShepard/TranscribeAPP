@@ -1,3 +1,6 @@
+import { CapacitorHttp } from "@capacitor/core";
+import { isCapacitorRuntime } from "../../utils/platform";
+
 export class MistralClient {
   private apiKey: string;
   private baseUrl = "https://api.mistral.ai/v1";
@@ -6,12 +9,47 @@ export class MistralClient {
     this.apiKey = apiKey;
   }
 
-  async validateApiKey(): Promise<void> {
-    const response = await fetch(`${this.baseUrl}/models`, {
-      method: "GET",
+  private async request(url: string, init: RequestInit = {}): Promise<any> {
+    if (isCapacitorRuntime()) {
+      const options = {
+        url,
+        method: init.method || "GET",
+        headers: {
+          "Authorization": `Bearer ${this.apiKey}`,
+          ...(init.headers as Record<string, string>),
+        },
+        data: init.body instanceof FormData ? undefined : (init.body ? JSON.parse(init.body as string) : undefined),
+      };
+      
+      // Note: FormData is handled differently in Capacitor native bridge.
+      // For transcription, we'll stick to standard fetch which Capacitor patches if possible,
+      // or we'd need a specialized multi-part implementation.
+      if (init.body instanceof FormData) {
+          // Fallback to standard fetch for FormData
+          return fetch(url, { ...init, headers: { "Authorization": `Bearer ${this.apiKey}`, ...init.headers } });
+      }
+
+      const response = await CapacitorHttp.request(options);
+      return {
+          ok: response.status >= 200 && response.status < 300,
+          status: response.status,
+          text: async () => JSON.stringify(response.data),
+          json: async () => response.data,
+      };
+    }
+
+    return fetch(url, {
+      ...init,
       headers: {
         "Authorization": `Bearer ${this.apiKey}`,
+        ...init.headers,
       },
+    });
+  }
+
+  async validateApiKey(): Promise<void> {
+    const response = await this.request(`${this.baseUrl}/models`, {
+      method: "GET",
     });
 
     if (!response.ok) {
@@ -41,6 +79,8 @@ export class MistralClient {
     formData.append("model", "voxtral-mini-latest");
 
     console.log("[MistralClient] Sending request to Mistral API...");
+    
+    // For transcription we use the standard fetch because of FormData complexity
     const response = await fetch(`${this.baseUrl}/audio/transcriptions`, {
       method: "POST",
       headers: {

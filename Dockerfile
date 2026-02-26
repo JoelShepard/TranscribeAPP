@@ -21,14 +21,14 @@ FROM docker.io/oven/bun:1-slim
 
 WORKDIR /app
 
-# Copia solo i file costruiti dallo stage precedente
+# Copia solo i file costruiti dallo stage precedente e lo script del server
 COPY --from=builder /app/dist ./dist
-# Copia package.json per riferimento (opzionale, ma utile per versionamento)
+COPY --from=builder /app/server.ts .
+# Copia package.json per riferimento
 COPY --from=builder /app/package.json .
 
-# Installa 'serve' globalmente o usalo via bunx per servire i file statici
 # Espone la porta 3000
 EXPOSE 3000
 
-# Comando di avvio: usa 'serve' per servire la cartella dist
-CMD ["bun", "x", "serve", "dist", "-p", "3000", "--single"]
+# Comando di avvio: usa lo script del server Bun che include il proxy DeepL
+CMD ["bun", "run", "server.ts"]

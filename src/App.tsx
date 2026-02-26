@@ -213,8 +213,26 @@ export default function App() {
     }
   };
 
+  // Strip HTML that Android clipboard may inject (e.g. <!DOCTYPE html>...).
+  // If the pasted value contains '<', parse it as HTML and extract textContent,
+  // then keep only characters valid in an API key (alphanumeric, hyphens, colons).
+  const sanitizeApiKey = (value: string): string => {
+    let text = value;
+    if (value.includes("<")) {
+      try {
+        const doc = new DOMParser().parseFromString(value, "text/html");
+        text = doc.body?.textContent ?? value;
+      } catch {
+        // fallback: strip all tags manually
+        text = value.replace(/<[^>]*>/g, "");
+      }
+    }
+    // Keep only characters that appear in API keys: alphanumeric, hyphens, underscores, colons, dots
+    return text.replace(/[^A-Za-z0-9\-_:.]/g, "").trim();
+  };
+
   const handleApiKeyChange = (value: string) => {
-    setApiKey(value);
+    setApiKey(sanitizeApiKey(value));
     if (isApiKeyVerified) {
       setIsApiKeyVerified(false);
       localStorage.removeItem("mistral_api_key_verified");
@@ -222,8 +240,9 @@ export default function App() {
   };
 
   // ── DeepL settings ───────────────────────────────────────────────────────
+
   const handleDeepLKeyChange = (value: string) => {
-    setDeepLApiKey(value);
+    setDeepLApiKey(sanitizeApiKey(value));
     if (isDeepLKeyVerified) {
       setIsDeepLKeyVerified(false);
       localStorage.removeItem("deepl_api_key_verified");
@@ -831,9 +850,9 @@ export default function App() {
                     <button
                       onClick={() => void testDeepLConnection()}
                       disabled={isTestingDeepL}
-                      className="shrink-0 min-w-[9.25rem] bg-[var(--md-sys-color-tertiary)] text-[var(--md-sys-color-on-tertiary)] px-7 py-3 rounded-2xl hover:opacity-90 font-bold disabled:cursor-not-allowed disabled:opacity-70"
+                      className="shrink-0 min-w-[9.25rem] bg-[var(--md-sys-color-primary)] text-[var(--md-sys-color-on-primary)] px-7 py-3 rounded-2xl hover:opacity-90 font-bold disabled:cursor-not-allowed disabled:opacity-70"
                     >
-                      {isTestingDeepL ? "Testing..." : "Test connection"}
+                      {isTestingDeepL ? "Checking..." : "Save"}
                     </button>
                   </div>
                   {deepLTestError && (
@@ -1006,6 +1025,17 @@ export default function App() {
                 Tap to start recording
               </p>
             </button>
+
+            {/* Translation Card — full width row below the two action cards */}
+            <div ref={translationCardRef} className="md:col-span-2">
+              <TranslationCard
+                apiKey={deepLApiKey}
+                plan={deepLPlan}
+                initialText={translationInitialText}
+                defaultTargetLang={deepLDefaultTargetLang}
+                usage={deepLUsage}
+              />
+            </div>
           </div>
         ) : null}
 
@@ -1127,16 +1157,18 @@ export default function App() {
           </div>
         )}
 
-        {/* Translation Card — always visible (below transcript when status=done, standalone otherwise) */}
-        <div ref={translationCardRef}>
-          <TranslationCard
-            apiKey={deepLApiKey}
-            plan={deepLPlan}
-            initialText={translationInitialText}
-            defaultTargetLang={deepLDefaultTargetLang}
-            usage={deepLUsage}
-          />
-        </div>
+        {/* Translation Card — shown standalone when not in idle/error state */}
+        {status !== "idle" && status !== "error" && (
+          <div ref={translationCardRef}>
+            <TranslationCard
+              apiKey={deepLApiKey}
+              plan={deepLPlan}
+              initialText={translationInitialText}
+              defaultTargetLang={deepLDefaultTargetLang}
+              usage={deepLUsage}
+            />
+          </div>
+        )}
       </main>
 
       <footer className="w-full py-6 text-center text-sm text-[var(--md-sys-color-on-surface-variant)] opacity-60">

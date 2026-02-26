@@ -91,6 +91,54 @@ serve({
       );
     }
 
+    // DeepL proxy — forwards requests to DeepL API to avoid browser CORS restrictions.
+    // The API key is passed via the X-DeepL-Auth-Key header and forwarded as Authorization.
+    // Route: /deepl-proxy/<plan>/<path>  (plan: "free" | "pro")
+    if (url.pathname.startsWith("/deepl-proxy/")) {
+      // pathname format: /deepl-proxy/{plan}/{...apiPath}
+      const parts = url.pathname.slice("/deepl-proxy/".length).split("/");
+      const plan = parts[0]; // "free" or "pro"
+      const apiPath = "/" + parts.slice(1).join("/");
+
+      const deepLBase =
+        plan === "pro"
+          ? "https://api.deepl.com/v2"
+          : "https://api-free.deepl.com/v2";
+
+      const targetUrl = `${deepLBase}${apiPath}${url.search}`;
+      const targetUrlObj = new URL(targetUrl);
+      const authKey = req.headers.get("X-DeepL-Auth-Key") ?? "";
+      
+      // Use auth_key query parameter for the upstream request as it's more proxy-friendly
+      targetUrlObj.searchParams.set("auth_key", authKey);
+
+      const proxyHeaders: Record<string, string> = {};
+      const contentType = req.headers.get("Content-Type");
+      if (contentType) proxyHeaders["Content-Type"] = contentType;
+
+      try {
+        const upstream = await fetch(targetUrlObj.toString(), {
+          method: req.method,
+          headers: proxyHeaders,
+          body: req.method !== "GET" && req.method !== "HEAD" ? await req.arrayBuffer() : undefined,
+        });
+
+        const responseBody = await upstream.arrayBuffer();
+        const proxyRes = new Response(responseBody, {
+          status: upstream.status,
+          headers: { "Content-Type": upstream.headers.get("Content-Type") ?? "application/json" },
+        });
+        logRequest(upstream.status, "[deepl-proxy]");
+        return proxyRes;
+      } catch (err) {
+        logRequest(502, "[deepl-proxy error]");
+        return new Response(JSON.stringify({ message: String(err) }), {
+          status: 502,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // Static assets
     const srcFile = Bun.file(join("./src", url.pathname));
     if (await srcFile.exists()) {

@@ -1,3 +1,6 @@
+import { CapacitorHttp } from "@capacitor/core";
+import { isTauriRuntime, isCapacitorRuntime } from "../../utils/platform";
+
 export type DeepLPlan = "free" | "pro";
 
 export type DeepLFormality =
@@ -45,6 +48,17 @@ export const FORMALITY_SUPPORTED_LANGS = new Set([
   "PT-PT",
   "RU",
   "JA",
+  "DE",
+  "FR",
+  "IT",
+  "ES",
+  "NL",
+  "PL",
+  "PT",
+  "PT-BR",
+  "PT-PT",
+  "RU",
+  "JA",
 ]);
 
 export class DeepLError extends Error {
@@ -76,13 +90,53 @@ export class DeepLClient {
     path: string,
     init: RequestInit = {},
   ): Promise<T> {
-    const url = `${this.baseUrl}${path}`;
+    const isTauri = isTauriRuntime();
+    const isCapacitor = isCapacitorRuntime();
+
+    if (isCapacitor) {
+      // Use CapacitorHttp to bypass CORS on Android/iOS
+      const url = `${this.baseUrl}${path}`;
+      const options = {
+        url,
+        method: init.method || "GET",
+        headers: {
+          "Authorization": `DeepL-Auth-Key ${this.apiKey}`,
+          ...(init.headers as Record<string, string>),
+        },
+        data: init.body ? JSON.parse(init.body as string) : undefined,
+      };
+
+      try {
+        const response = await CapacitorHttp.request(options);
+        if (response.status >= 200 && response.status < 300) {
+          return response.data as T;
+        }
+        throw new DeepLError(`HTTP ${response.status}: ${JSON.stringify(response.data)}`, response.status);
+      } catch (err: any) {
+        if (err instanceof DeepLError) throw err;
+        throw new DeepLError(`Capacitor Network Error: ${err.message || "Failed to fetch"}`);
+      }
+    }
+
+    let url: string;
     const headers: Record<string, string> = {
-      Authorization: `DeepL-Auth-Key ${this.apiKey}`,
       ...(init.headers as Record<string, string>),
     };
 
-    const response = await fetch(url, { ...init, headers });
+    if (isTauri) {
+      // Direct call — Tauri CSP already whitelists both DeepL origins.
+      url = `${this.baseUrl}${path}`;
+      headers["Authorization"] = `DeepL-Auth-Key ${this.apiKey}`;
+    } else {
+      // Proxy call — browser cannot reach DeepL directly due to CORS.
+      url = `/deepl-proxy/${this.plan}${path}`;
+      headers["X-DeepL-Auth-Key"] = this.apiKey;
+    }
+
+    const response = await fetch(url, { ...init, headers }).catch((err) => {
+      console.error("[DeepLClient] Fetch failed:", err);
+      throw new DeepLError(`Network error: ${err.message || "Failed to fetch"}. This might be a CORS issue or network problem.`);
+    });
 
     if (!response.ok) {
       const bodyText = await response.text().catch(() => "");

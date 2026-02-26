@@ -42,14 +42,13 @@ describe("DeepLClient", () => {
       expect(results[0]!.text).toBe("Hello world");
       expect(results[0]!.detectedSourceLanguage).toBe("IT");
 
-      // Uses free endpoint
-      expect(capturedUrl).toBe(
-        "https://api-free.deepl.com/v2/translate",
-      );
+      // In non-Tauri environments the client routes through the local proxy
+      expect(capturedUrl).toBe("/deepl-proxy/free/translate");
       expect(capturedInit?.method).toBe("POST");
+      // Auth key is forwarded via X-DeepL-Auth-Key (not Authorization) when proxied
       expect(
-        (capturedInit?.headers as Record<string, string>)?.Authorization,
-      ).toBe("DeepL-Auth-Key secret-key");
+        (capturedInit?.headers as Record<string, string>)?.["X-DeepL-Auth-Key"],
+      ).toBe("secret-key");
 
       const body = JSON.parse(capturedInit?.body as string);
       expect(body.text).toEqual(["Ciao mondo"]);
@@ -74,7 +73,7 @@ describe("DeepLClient", () => {
       const client = new DeepLClient("pro-key", "pro");
       await client.translateText(["Hello"], "FR");
 
-      expect(capturedUrl).toBe("https://api.deepl.com/v2/translate");
+      expect(capturedUrl).toBe("/deepl-proxy/pro/translate");
     });
 
     it("passes optional parameters to the request body", async () => {

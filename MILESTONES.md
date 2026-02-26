@@ -75,6 +75,7 @@ This section tracks the full implementation of the DeepL-powered translation fea
 
 ### 6) Reliability, Quality, and Developer Experience
 
+- [x] **DeepL Reliability**: Fix "Unexpected token '<'" error in production/Capacitor by adding `isCapacitorRuntime` detection and implementing a production server with proxy support.
 - [ ] **Tests**: Expand test coverage for `App.tsx` critical flows (upload, record, error states).
 - [ ] **Tests**: Add integration tests for transcription request lifecycle and cancellation.
 - [ ] **Performance**: Add benchmark suite for audio split/normalize steps with regression thresholds.
