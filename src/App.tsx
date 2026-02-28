@@ -128,6 +128,8 @@ export default function App() {
   const [deepLTestError, setDeepLTestError] = useState("");
   const [showDeepLKey, setShowDeepLKey] = useState(false);
   const [showMistralKey, setShowMistralKey] = useState(false);
+  const [activeTab, setActiveTab] = useState<"transcribe" | "translate">("transcribe");
+  const [showLogoMenu, setShowLogoMenu] = useState(false);
   // Text to pre-fill in TranslationCard (set when user clicks "Translate result")
   const [translationInitialText, setTranslationInitialText] = useState("");
 
@@ -639,23 +641,82 @@ export default function App() {
         >
           {(() => {
             const logoContent = (
-              <button
-                onClick={() => {
-                  setStatus("idle");
-                  setTranscription("");
-                  setError("");
-                  setTranslationInitialText("");
-                }}
-                className="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity"
-                aria-label="Go to Home"
-              >
-                <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-[var(--md-sys-color-on-primary)] bg-[var(--md-sys-color-primary)] shadow-[0_8px_18px_rgba(39,80,196,0.30)]">
-                  <AudioLines className="w-5 h-5" />
+              <div className="relative">
+                <button
+                  onClick={() => setShowLogoMenu(!showLogoMenu)}
+                  className="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity"
+                  aria-label="Toggle Menu"
+                  aria-expanded={showLogoMenu}
+                >
+                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-[var(--md-sys-color-on-primary)] bg-[var(--md-sys-color-primary)] shadow-[0_8px_18px_rgba(39,80,196,0.30)]">
+                    <AudioLines className="w-5 h-5" />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <h1 className="text-xl font-extrabold tracking-tight text-[var(--md-sys-color-on-surface)] truncate">
+                      {activeTab === "transcribe" ? "TranscribeJS" : "TranslateJS"}
+                    </h1>
+                    <ChevronDown className={cn(
+                      "w-4 h-4 text-[var(--md-sys-color-on-surface-variant)] opacity-50 transition-all",
+                      showLogoMenu && "rotate-180 opacity-100"
+                    )} />
+                  </div>
+                </button>
+
+                {/* Dropdown Menu Overlay for mobile click-away */}
+                {showLogoMenu && (
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setShowLogoMenu(false)}
+                  />
+                )}
+
+                {/* Dropdown Menu */}
+                <div className={cn(
+                  "absolute top-full left-0 mt-2 w-48 rounded-2xl border border-[color:var(--md-sys-color-outline)]/20 bg-[var(--md-sys-color-surface-container-high)] shadow-xl transition-all z-50 overflow-hidden",
+                  showLogoMenu 
+                    ? "opacity-100 translate-y-0 pointer-events-auto" 
+                    : "opacity-0 translate-y-2 pointer-events-none"
+                )}>
+                  <button
+                    onClick={() => {
+                      setActiveTab("transcribe");
+                      setShowLogoMenu(false);
+                      if (status === "done") {
+                        // Keep transcription if we are just switching tabs
+                      } else {
+                        setStatus("idle");
+                        setTranscription("");
+                        setError("");
+                        setTranslationInitialText("");
+                      }
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-colors hover:bg-[var(--md-sys-color-surface-container-highest)]",
+                      activeTab === "transcribe"
+                        ? "text-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/10"
+                        : "text-[var(--md-sys-color-on-surface)]",
+                    )}
+                  >
+                    <AudioLines className="w-4 h-4" />
+                    Transcription
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab("translate");
+                      setShowLogoMenu(false);
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-colors hover:bg-[var(--md-sys-color-surface-container-highest)]",
+                      activeTab === "translate"
+                        ? "text-[var(--md-sys-color-tertiary)] bg-[var(--md-sys-color-tertiary-container)]/10"
+                        : "text-[var(--md-sys-color-on-surface)]",
+                    )}
+                  >
+                    <Languages className="w-4 h-4" />
+                    Translation
+                  </button>
                 </div>
-                <h1 className="text-xl font-extrabold tracking-tight text-[var(--md-sys-color-on-surface)] truncate">
-                  TranscribeJS
-                </h1>
-              </button>
+              </div>
             );
 
             const actionsContent = (
@@ -967,203 +1028,200 @@ export default function App() {
           </div>
         )}
 
-        {/* Input Area */}
-        {status === "idle" || status === "error" ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Upload */}
-            <div
-              role="button"
-              tabIndex={0}
-              onClick={() => fileInputRef.current?.click()}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  fileInputRef.current?.click();
-                }
-              }}
-              onDragOver={(e) => {
-                e.preventDefault();
-                setIsDragOver(true);
-              }}
-              onDragLeave={() => setIsDragOver(false)}
-              onDrop={handleDrop}
-              className={cn(
-                "group bg-[var(--md-sys-color-surface-container)] p-8 rounded-[28px] shadow-[0_4px_18px_rgba(27,34,57,0.10)] border border-[color:var(--md-sys-color-outline)]/30 hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(39,80,196,0.22)] transition-all cursor-pointer flex flex-col items-center justify-center h-64 outline-none",
-                isDragOver &&
-                  "ring-4 ring-[var(--md-sys-color-primary)]/35 border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/25",
-              )}
-              aria-label="Upload audio file"
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={AUDIO_FILE_INPUT_ACCEPT}
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-              <div className="w-16 h-16 bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] rounded-3xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <FileAudio className="w-8 h-8" />
-              </div>
-              <h3 className="text-xl font-extrabold text-[var(--md-sys-color-on-surface)]">
-                Upload Audio
-              </h3>
-              <p className="text-[var(--md-sys-color-on-surface-variant)] text-center mt-2 text-sm">
-                {isDragOver
-                  ? "Drop your audio file here"
-                  : `Click or drag and drop (${SUPPORTED_AUDIO_FORMATS_LABEL})`}
-              </p>
-            </div>
-
-            {/* Record */}
-            <button
-              onClick={startRecording}
-              className="group bg-[var(--md-sys-color-surface-container)] p-8 rounded-[28px] shadow-[0_4px_18px_rgba(27,34,57,0.10)] border border-[color:var(--md-sys-color-outline)]/30 hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(176,54,74,0.24)] transition-all cursor-pointer flex flex-col items-center justify-center h-64"
-            >
-              <div className="w-16 h-16 bg-rose-200/80 dark:bg-rose-900/45 text-rose-700 dark:text-rose-300 rounded-3xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Mic className="w-8 h-8" />
-              </div>
-              <h3 className="text-xl font-extrabold text-[var(--md-sys-color-on-surface)]">
-                Record Voice
-              </h3>
-              <p className="text-[var(--md-sys-color-on-surface-variant)] text-center mt-2 text-sm">
-                Tap to start recording
-              </p>
-            </button>
-
-            {/* Translation Card — full width row below the two action cards */}
-            <div ref={translationCardRef} className="md:col-span-2">
-              <TranslationCard
-                apiKey={deepLApiKey}
-                plan={deepLPlan}
-                initialText={translationInitialText}
-                defaultTargetLang={deepLDefaultTargetLang}
-                usage={deepLUsage}
-              />
-            </div>
-          </div>
-        ) : null}
-
-        {/* Recording State */}
-        {status === "recording" && (
-          <div className="flex flex-col items-center justify-center py-12 bg-[var(--md-sys-color-surface-container)] rounded-[32px] shadow-[0_8px_24px_rgba(60,20,31,0.18)] border border-rose-300/30">
-            <div className="w-20 h-20 bg-rose-600 rounded-[24px] flex items-center justify-center mb-6 shadow-lg shadow-rose-300/40 dark:shadow-none">
-              <Mic className="w-10 h-10 text-white" />
-            </div>
-            <h2 className="text-2xl font-extrabold text-[var(--md-sys-color-on-surface)] mb-2">
-              Recording...
-            </h2>
-            <p className="text-[var(--md-sys-color-on-surface-variant)] mb-8">
-              Speak clearly into the microphone
-            </p>
-            <div className="audio-visualizer mb-8" aria-hidden="true">
-              {visualizerBars.map((bar) => (
-                <span
-                  key={bar}
-                  className="audio-visualizer-bar"
-                  style={{ animationDelay: `${bar * 0.11}s` }}
-                />
-              ))}
-            </div>
-            <button
-              onClick={stopRecording}
-              className="bg-rose-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-rose-700 flex items-center gap-2 shadow-md transition-all hover:scale-105"
-            >
-              <StopCircle className="w-5 h-5" /> Stop Recording
-            </button>
-          </div>
-        )}
-
-        {/* Processing State */}
-        {(status === "processing" || status === "transcribing") && (
-          <div className="flex flex-col items-center justify-center py-12 bg-[var(--md-sys-color-surface-container)] rounded-[32px] border border-[color:var(--md-sys-color-outline)]/30 shadow-[0_8px_24px_rgba(39,80,196,0.14)]">
-            <Loader2 className="w-12 h-12 text-[var(--md-sys-color-primary)] animate-spin mb-6" />
-            <h2 className="text-2xl font-extrabold text-[var(--md-sys-color-on-surface)] mb-2">
-              Processing Audio
-            </h2>
-            <p className="text-[var(--md-sys-color-on-surface-variant)] text-lg">
-              {progress}
-            </p>
-          </div>
-        )}
-
-        {/* Result State */}
-        {status === "done" && (
-          <div className="bg-[var(--md-sys-color-surface-container)] rounded-[30px] shadow-[0_8px_24px_rgba(27,34,57,0.10)] border border-[color:var(--md-sys-color-outline)]/30 overflow-hidden">
-            <div className="bg-[var(--md-sys-color-surface-container-high)] px-6 py-4 border-b border-[color:var(--md-sys-color-outline)]/30 flex justify-between items-center">
-              <h3 className="font-bold text-[var(--md-sys-color-on-surface)]">
-                Transcription Result
-              </h3>
-              <div className="flex gap-2">
-                <button
-                  onClick={copyToClipboard}
+        {/* Transcribe Tab content */}
+        {activeTab === "transcribe" && (
+          <>
+            {/* Input Area */}
+            {(status === "idle" || status === "error") && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Upload */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => fileInputRef.current?.click()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      fileInputRef.current?.click();
+                    }
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragOver(true);
+                  }}
+                  onDragLeave={() => setIsDragOver(false)}
+                  onDrop={handleDrop}
                   className={cn(
-                    "p-2.5 hover:bg-[var(--md-sys-color-surface-container-highest)] rounded-xl transition-colors",
-                    isCopied
-                      ? "text-[var(--md-sys-color-primary)]"
-                      : "text-[var(--md-sys-color-on-surface-variant)]",
+                    "group bg-[var(--md-sys-color-surface-container)] p-8 rounded-[28px] shadow-[0_4px_18px_rgba(27,34,57,0.10)] border border-[color:var(--md-sys-color-outline)]/30 hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(39,80,196,0.22)] transition-all cursor-pointer flex flex-col items-center justify-center h-64 outline-none",
+                    isDragOver &&
+                      "ring-4 ring-[var(--md-sys-color-primary)]/35 border-[var(--md-sys-color-primary)] bg-[var(--md-sys-color-primary-container)]/25",
                   )}
-                  title={isCopied ? "Copied" : "Copy"}
-                  aria-label={
-                    isCopied ? "Copied to clipboard" : "Copy to clipboard"
-                  }
+                  aria-label="Upload audio file"
                 >
-                  {isCopied ? (
-                    <Check className="w-5 h-5" />
-                  ) : (
-                    <Copy className="w-5 h-5" />
-                  )}
-                </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={AUDIO_FILE_INPUT_ACCEPT}
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <div className="w-16 h-16 bg-[var(--md-sys-color-primary-container)] text-[var(--md-sys-color-on-primary-container)] rounded-3xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <FileAudio className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-extrabold text-[var(--md-sys-color-on-surface)]">
+                    Upload Audio
+                  </h3>
+                  <p className="text-[var(--md-sys-color-on-surface-variant)] text-center mt-2 text-sm">
+                    {isDragOver
+                      ? "Drop your audio file here"
+                      : `Click or drag and drop (${SUPPORTED_AUDIO_FORMATS_LABEL})`}
+                  </p>
+                </div>
+
+                {/* Record */}
                 <button
-                  onClick={downloadText}
-                  className="p-2.5 hover:bg-[var(--md-sys-color-surface-container-highest)] rounded-xl text-[var(--md-sys-color-on-surface-variant)]"
-                  title="Save"
+                  onClick={startRecording}
+                  className="group bg-[var(--md-sys-color-surface-container)] p-8 rounded-[28px] shadow-[0_4px_18px_rgba(27,34,57,0.10)] border border-[color:var(--md-sys-color-outline)]/30 hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(176,54,74,0.24)] transition-all cursor-pointer flex flex-col items-center justify-center h-64"
                 >
-                  <Save className="w-5 h-5" />
+                  <div className="w-16 h-16 bg-rose-200/80 dark:bg-rose-900/45 text-rose-700 dark:text-rose-300 rounded-3xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Mic className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-extrabold text-[var(--md-sys-color-on-surface)]">
+                    Record Voice
+                  </h3>
+                  <p className="text-[var(--md-sys-color-on-surface-variant)] text-center mt-2 text-sm">
+                    Tap to start recording
+                  </p>
                 </button>
               </div>
-            </div>
-            <div className="p-6">
-              <textarea
-                className="w-full h-96 p-4 rounded-2xl text-on-surface bg-surface leading-relaxed outline-none resize-none border border-outline/20 focus:ring-2 focus:ring-primary/20 transition-all"
-                value={transcription}
-                onChange={(e) => setTranscription(e.target.value)}
-              />
-            </div>
-            <div className="bg-[var(--md-sys-color-surface-container-high)] px-6 py-4 border-t border-[color:var(--md-sys-color-outline)]/30 flex flex-wrap items-center justify-between gap-3">
-              <button
-                onClick={() => {
-                  setStatus("idle");
-                  setTranslationInitialText("");
-                }}
-                className="text-[var(--md-sys-color-primary)] font-bold hover:opacity-80"
-              >
-                Transcribe Another File
-              </button>
-              {/* 7.5 — Translate result CTA */}
-              <button
-                onClick={handleTranslateResult}
-                className={cn(
-                  "flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-sm transition-all",
-                  deepLKeyConfigured
-                    ? "bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] hover:opacity-90"
-                    : "bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface-variant)] hover:opacity-80",
-                )}
-                title={
-                  deepLKeyConfigured
-                    ? "Translate with DeepL"
-                    : "Add a DeepL API key in Settings to translate"
-                }
-              >
-                <Languages className="w-4 h-4" />
-                Translate result
-              </button>
-            </div>
-          </div>
+            )}
+
+            {/* Recording State */}
+            {status === "recording" && (
+              <div className="flex flex-col items-center justify-center py-12 bg-[var(--md-sys-color-surface-container)] rounded-[32px] shadow-[0_8px_24px_rgba(60,20,31,0.18)] border border-rose-300/30">
+                <div className="w-20 h-20 bg-rose-600 rounded-[24px] flex items-center justify-center mb-6 shadow-lg shadow-rose-300/40 dark:shadow-none">
+                  <Mic className="w-10 h-10 text-white" />
+                </div>
+                <h2 className="text-2xl font-extrabold text-[var(--md-sys-color-on-surface)] mb-2">
+                  Recording...
+                </h2>
+                <p className="text-[var(--md-sys-color-on-surface-variant)] mb-8">
+                  Speak clearly into the microphone
+                </p>
+                <div className="audio-visualizer mb-8" aria-hidden="true">
+                  {visualizerBars.map((bar) => (
+                    <span
+                      key={bar}
+                      className="audio-visualizer-bar"
+                      style={{ animationDelay: `${bar * 0.11}s` }}
+                    />
+                  ))}
+                </div>
+                <button
+                  onClick={stopRecording}
+                  className="bg-rose-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-rose-700 flex items-center gap-2 shadow-md transition-all hover:scale-105"
+                >
+                  <StopCircle className="w-5 h-5" /> Stop Recording
+                </button>
+              </div>
+            )}
+
+            {/* Processing State */}
+            {(status === "processing" || status === "transcribing") && (
+              <div className="flex flex-col items-center justify-center py-12 bg-[var(--md-sys-color-surface-container)] rounded-[32px] border border-[color:var(--md-sys-color-outline)]/30 shadow-[0_8px_24px_rgba(39,80,196,0.14)]">
+                <Loader2 className="w-12 h-12 text-[var(--md-sys-color-primary)] animate-spin mb-6" />
+                <h2 className="text-2xl font-extrabold text-[var(--md-sys-color-on-surface)] mb-2">
+                  Processing Audio
+                </h2>
+                <p className="text-[var(--md-sys-color-on-surface-variant)] text-lg">
+                  {progress}
+                </p>
+              </div>
+            )}
+
+            {/* Result State */}
+            {status === "done" && (
+              <div className="bg-[var(--md-sys-color-surface-container)] rounded-[30px] shadow-[0_8px_24px_rgba(27,34,57,0.10)] border border-[color:var(--md-sys-color-outline)]/30 overflow-hidden">
+                <div className="bg-[var(--md-sys-color-surface-container-high)] px-6 py-4 border-b border-[color:var(--md-sys-color-outline)]/30 flex justify-between items-center">
+                  <h3 className="font-bold text-[var(--md-sys-color-on-surface)]">
+                    Transcription Result
+                  </h3>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={copyToClipboard}
+                      className={cn(
+                        "p-2.5 hover:bg-[var(--md-sys-color-surface-container-highest)] rounded-xl transition-colors",
+                        isCopied
+                          ? "text-[var(--md-sys-color-primary)]"
+                          : "text-[var(--md-sys-color-on-surface-variant)]",
+                      )}
+                      title={isCopied ? "Copied" : "Copy"}
+                      aria-label={
+                        isCopied ? "Copied to clipboard" : "Copy to clipboard"
+                      }
+                    >
+                      {isCopied ? (
+                        <Check className="w-5 h-5" />
+                      ) : (
+                        <Copy className="w-5 h-5" />
+                      )}
+                    </button>
+                    <button
+                      onClick={downloadText}
+                      className="p-2.5 hover:bg-[var(--md-sys-color-surface-container-highest)] rounded-xl text-[var(--md-sys-color-on-surface-variant)]"
+                      title="Save"
+                    >
+                      <Save className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <textarea
+                    className="w-full h-96 p-4 rounded-2xl text-on-surface bg-surface leading-relaxed outline-none resize-none border border-outline/20 focus:ring-2 focus:ring-primary/20 transition-all"
+                    value={transcription}
+                    onChange={(e) => setTranscription(e.target.value)}
+                  />
+                </div>
+                <div className="bg-[var(--md-sys-color-surface-container-high)] px-6 py-4 border-t border-[color:var(--md-sys-color-outline)]/30 flex flex-wrap items-center justify-between gap-3">
+                  <button
+                    onClick={() => {
+                      setStatus("idle");
+                      setTranslationInitialText("");
+                    }}
+                    className="text-[var(--md-sys-color-primary)] font-bold hover:opacity-80"
+                  >
+                    Transcribe Another File
+                  </button>
+                  {/* 7.5 — Translate result CTA */}
+                  <button
+                    onClick={() => {
+                      handleTranslateResult();
+                      setActiveTab("translate");
+                    }}
+                    className={cn(
+                      "flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-sm transition-all",
+                      deepLKeyConfigured
+                        ? "bg-[var(--md-sys-color-tertiary-container)] text-[var(--md-sys-color-on-tertiary-container)] hover:opacity-90"
+                        : "bg-[var(--md-sys-color-surface-container-highest)] text-[var(--md-sys-color-on-surface-variant)] hover:opacity-80",
+                    )}
+                    title={
+                      deepLKeyConfigured
+                        ? "Translate with DeepL"
+                        : "Add a DeepL API key in Settings to translate"
+                    }
+                  >
+                    <Languages className="w-4 h-4" />
+                    Translate result
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
-        {/* Translation Card — shown standalone when not in idle/error state */}
-        {status !== "idle" && status !== "error" && (
-          <div ref={translationCardRef}>
+        {/* Translation Tab content */}
+        {activeTab === "translate" && (
+          <div ref={translationCardRef} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <TranslationCard
               apiKey={deepLApiKey}
               plan={deepLPlan}
