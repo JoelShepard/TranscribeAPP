@@ -30,18 +30,16 @@ serve({
           : "https://api-free.deepl.com/v2";
 
       const targetUrl = `${deepLBase}${apiPath}${url.search}`;
-      const targetUrlObj = new URL(targetUrl);
       const authKey = req.headers.get("X-DeepL-Auth-Key") ?? "";
       
-      // Use auth_key query parameter for the upstream request as it's more proxy-friendly
-      targetUrlObj.searchParams.set("auth_key", authKey);
-
-      const proxyHeaders: Record<string, string> = {};
+      const proxyHeaders: Record<string, string> = {
+        "Authorization": `DeepL-Auth-Key ${authKey}`
+      };
       const contentType = req.headers.get("Content-Type");
       if (contentType) proxyHeaders["Content-Type"] = contentType;
 
       try {
-        const upstream = await fetch(targetUrlObj.toString(), {
+        const upstream = await fetch(targetUrl, {
           method: req.method,
           headers: proxyHeaders,
           body: req.method !== "GET" && req.method !== "HEAD" ? await req.arrayBuffer() : undefined,
