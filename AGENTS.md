@@ -47,14 +47,9 @@ This document serves as the primary instruction set for AI agents and developers
 
 - **Strict Mode:** TypeScript `strict: true` is enabled. No `any` unless absolutely necessary.
 - **Components:** Use Functional Components with named exports.
-  ```tsx
-  // Good
-  export function MyComponent({ prop }: Props) { ... }
-  ```
 - **Hooks:** Prioritize custom hooks for logic reuse. Place in `src/hooks/` if shared.
 - **State:** Use `useState` for local UI state. Use Context for global app state (e.g. auth, settings).
 - **Platform Detection:** Use `src/utils/platform.ts` to detect environment (e.g., `isTauriRuntime()`).
-- **Window Decorations:** For Tauri, use the custom `TitleBar` component (`src/components/TitleBar.tsx`).
 - **Production UX:** Do not add platform/debug notice banners in the main UI unless explicitly requested by the user.
 
 ### Styling (TailwindCSS)
@@ -80,7 +75,6 @@ This document serves as the primary instruction set for AI agents and developers
 - **`src-tauri/`**: Tauri backend (Rust).
   - Contains `tauri.conf.json` for configuration.
   - Contains `Cargo.toml` for Rust dependencies.
-  - Use `makepkg` (Arch) for final distribution.
 
 ## 5. Error Handling
 
@@ -89,8 +83,6 @@ This document serves as the primary instruction set for AI agents and developers
 - **Logging:** Log errors to console with context: `console.error("[ServiceName] Error performing action:", err)`.
 
 ## 6. Anti-Regression Rules
-
-These rules exist because of past incidents. Every rule below protects a real failure mode. Do not remove or weaken them.
 
 ### 6.1 Version Synchronization (CRITICAL)
 
@@ -109,142 +101,36 @@ The version string is declared in **four** files. All four MUST be updated atomi
 grep -E '"version"' package.json src-tauri/tauri.conf.json && grep '^version' src-tauri/Cargo.toml && grep '^pkgver' PKGBUILD
 ```
 
-All four must print the same value. If they diverge, the release is broken.
-
-### 6.2 Tauri CSP (`connect-src`) Guard
-
-The Content Security Policy in `src-tauri/tauri.conf.json` → `app.security.csp` controls **all** network access from the Tauri desktop webview. It is a single-line string.
-
-- **Rule:** When adding or changing any external API endpoint (e.g. a new AI provider), add its origin to `connect-src` in the same changeset.
-- **Current whitelist:** `https://api.mistral.ai`. Nothing else is allowed.
-- **Failure signature:** `TypeError: Load failed` in the UI with no other useful error message.
-- **Verification:** After any networking change, run `bun run dev:tauri` and validate the full flow: mic start → stop → transcription request → result displayed.
-
-### 6.3 Dual Recording Path Integrity
-
-Audio recording has two completely separate code paths in `App.tsx`:
-
-| Condition              | Path   | Implementation                                                                                            |
-| :--------------------- | :----- | :-------------------------------------------------------------------------------------------------------- |
-| `tauriEnv && linuxEnv` | Native | Rust `cpal` via `invoke('start_native_recording')` / `invoke('stop_native_recording')`, returns WAV bytes |
-| Everything else        | Web    | `navigator.mediaDevices.getUserMedia()` + `MediaRecorder` API, produces webm/ogg blob                     |
-
-- **Rule:** Any change to recording logic must be tested on **both** paths. A fix that works on web may break Tauri native, and vice versa.
-- **Rule:** Do not unify the two paths unless both are fully validated. They exist separately because `MediaRecorder` is unreliable inside Tauri's Linux webview.
-
-### 6.4 Custom Window Title Bar
-
-`tauri.conf.json` sets `"decorations": false`. All window chrome (drag, minimize, maximize, close) is provided by `src/components/TitleBar.tsx` using `@tauri-apps/api/window`.
-
-- **Rule:** Never remove or break `TitleBar.tsx` without first re-enabling native decorations in `tauri.conf.json`.
-- **Failure mode:** If the TitleBar breaks, the desktop window becomes undraggable and unclosable. The user must `kill` the process.
-
-### 6.5 Tauri Capabilities
-
-`src-tauri/capabilities/default.json` explicitly grants window control permissions (`allow-minimize`, `allow-maximize`, `allow-close`, `allow-start-dragging`, `allow-toggle-maximize`).
-
-- **Rule:** If you add new Tauri v2 plugin commands that require capabilities, add the corresponding permissions to `default.json`. Custom `invoke_handler` commands (like `start_native_recording`) do not require capability entries.
-
-### 6.6 Build Pipeline Integrity
+### 6.2 Build Pipeline Integrity
 
 The build uses two custom scripts (`build.ts` and `dev.ts`) that call the TailwindCSS CLI directly from `node_modules/.bin/tailwindcss`.
 
 - **Rule:** If upgrading TailwindCSS, verify that both `build.ts` and `dev.ts` still resolve the CLI binary correctly.
-- **Rule:** The dev server (`dev.ts`) sets `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp` headers. These are required for `SharedArrayBuffer` and `OfflineAudioContext`. Do not remove them or audio processing will break in some browsers.
 
-### 6.7 CI Workflow Inventory
-
-There are exactly **five** GitHub Actions workflows. Do not add or remove workflows without explicit approval.
-
-| Workflow                      | Trigger                        | Purpose                                                              |
-| :---------------------------- | :----------------------------- | :------------------------------------------------------------------- |
-| `ci-tests.yml`                | PR to `main`                   | Runs `bun test`                                                      |
-| `publish-ghcr.yml`            | Tag `v*`                       | Builds and pushes Docker image to GHCR (multi-arch: amd64 + arm64)   |
-| `release-linux-desktop.yml`   | Tag `v*`                       | Builds Tauri binary (`--no-bundle`) and publishes to GitHub Releases |
-| `release-windows-desktop.yml` | Tag `v*` / `workflow_dispatch` | Builds Windows Tauri binary and publishes to GitHub Releases         |
-| `release-android-apk.yml`     | Tag `v*`                       | Builds signed APK and publishes to GitHub Releases                   |
-
-- **Rule:** The Linux desktop workflow uses `ubuntu-22.04` (pinned), not `ubuntu-latest`. Do not change this — the Tauri v2 build depends on specific `libwebkit2gtk-4.1-dev` availability.
-- **Rule:** The desktop build uses `--no-bundle`. No AppImage, deb, or rpm formats are produced. Only the raw binary is released.
-- **Rule:** Android signing requires four secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`. The workflow validates all four exist before building.
-- **Rule:** The Windows workflow supports `workflow_dispatch` with a `release_tag` input to manually attach assets to an existing release. Do not remove this trigger.
-
-### 6.8 Android Build Integrity
-
-- **Capacitor sync:** `bun run cap:sync` must be run before any Android build to copy `dist/` into `android/app/src/main/assets/public/`.
-- **Gradle properties:** `variables.gradle` controls `minSdkVersion` (24), `compileSdkVersion` (36), and `targetSdkVersion` (36). Changing these affects device compatibility.
-- **Java version:** The build requires Java 21. Both `gradle.properties` and the CI workflow pin to JDK 21.
-
-### 6.9 Docker Build Integrity
+### 6.3 Docker Build Integrity
 
 - **Multi-stage:** The `Dockerfile` uses `oven/bun:1` (builder) → `oven/bun:1-slim` (runtime).
 - **Serve command:** Production uses `bun x serve dist -p 3000 --single`. The `--single` flag is required for SPA routing.
-- **Rule:** Do not add runtime dependencies to the slim image. If a new dependency is needed at runtime, it must be explicitly justified.
-
-### 6.10 Header Layout Integrity
-
-The application uses a custom sticky header that sits below the window title bar.
-
-- **Rule:** The header container in `src/App.tsx` must have at least `mb-14` (56px) or equivalent bottom margin.
-- **Reasoning:** In the desktop app, the header bar (containing the logo and settings) can visually collapse onto or touch the main action buttons ("Upload Audio" / "Record Voice") if the margin is too small, especially when window decorations are custom.
-- **Verification:** Visually verify that there is a clear gap between the header pill and the action cards in both web (`bun run dev`) and desktop (`bun run dev:tauri`) modes.
 
 ## 7. Workflow Rules for Agents
 
 1.  **Read First:** Always read `package.json` and `README.md` to understand current context.
-2.  **Branch First:** Create a dedicated branch from up-to-date `main` before any source change. Follow the full branching model in §9.
-3.  **Conventional Commits:** Every commit must follow §9.5. Messages like `"wip"` or `"fix stuff"` are not acceptable.
+2.  **Branch First:** Create a dedicated branch from up-to-date `main` before any source change.
+3.  **Conventional Commits:** Every commit must follow Conventional Commits format.
 4.  **Build Before PR:** `bun test && bun run build` must pass before opening a Pull Request.
-5.  **PR Before Merge:** No code reaches `main` without an open PR and a green `ci-tests.yml` run. Direct pushes to `main` for source changes are forbidden.
+5.  **PR Before Merge:** No code reaches `main` without an open PR and a green `ci-tests.yml` run.
 6.  **Verify:** After making changes, run `bun run build` to ensure no compilation errors.
 7.  **Clean Up:** Remove unused files or imports introduced during refactoring.
 8.  **No Placeholders:** Implementation should be complete. If a placeholder is strictly necessary, mark it with `TODO:`.
 9.  **Milestones Execution:** Upon start, read the `MILESTONES.md` file. Start working on the first unchecked milestone (`[ ]`). Once completed, update `MILESTONES.md` to mark it as checked (`[x]`).
-10. **Release Branch Hygiene:** Before creating/pushing a release tag, run `git status --short`. If there are modified tracked source files, do not publish until they are committed or explicitly excluded.
-11. **Desktop Release Verification:** After a release build, verify that the Linux binary artifact is present and valid in GitHub Releases.
 
-## 8. Repository & CI/CD (GitHub)
+## 8. Specialist Skills
 
-- **Git Hosting:** `git@github.com:JoelShepard/TranscribeAPP.git`
-- **Container Registry:** GHCR (`ghcr.io`). Image names must be lowercase.
-- **Trigger Policy:** All release workflows run only on pushes of tags matching `v*`.
-- **Auth Policy:** Prefer `${{ secrets.GITHUB_TOKEN }}` for GHCR publish. Do not introduce a PAT unless explicitly required.
+When performing specialized tasks, the agent MUST load the corresponding skill to ensure compliance with advanced standards:
 
-## 9. Git Branching & Development Workflow
-
-This section defines the authoritative, end-to-end Git workflow for this repository. It is now managed as a dedicated agent skill.
-
-- **Skill Name:** `git-workflow`
-- **Location:** `.agents/skills/git-workflow/SKILL.md`
-
-### 9.1 Usage
-
-When performing any Git-related task (creating branches, committing, pushing, or managing releases), the agent MUST load the `git-workflow` skill to ensure full compliance with the project's standards.
-
-```bash
-# Example of loading the skill
-[tool_call: skill(name='git-workflow')]
-```
-
-The skill covers:
-1. **Branch Naming Conventions** (Prefixes like `feat/`, `fix/`, `chore/`).
-2. **Commit Message Standards** (Conventional Commits format).
-3. **Pull Request Workflow** (Checklist and squash merge).
-4. **Release Process** (Version synchronization across 4 files and tagging).
-
-### 9.2 Release Manifest Files (Reference)
-
-For quick reference, the version string MUST be updated atomically in these four files during a release:
-
-| File                        | Field                       |
-| :-------------------------- | :-------------------------- |
-| `package.json`              | `"version"`                 |
-| `src-tauri/tauri.conf.json` | `"version"`                 |
-| `src-tauri/Cargo.toml`      | `version` under `[package]` |
-| `PKGBUILD`                  | `pkgver`                    |
-
-**Verification:** After any version bump, run:
-```bash
-grep -E '"version"' package.json src-tauri/tauri.conf.json && grep '^version' src-tauri/Cargo.toml && grep '^pkgver' PKGBUILD
-```
-
+| Skill | Location | Purpose |
+| :--- | :--- | :--- |
+| `git-workflow` | `.agents/skills/git-workflow/SKILL.md` | Branching, commits, PRs, and version bumping. |
+| `tauri-development` | `.agents/skills/tauri-development/SKILL.md` | Desktop development, Rust backend, CSP, and TitleBar. |
+| `audio-standards` | `.agents/skills/audio-standards/SKILL.md` | Audio recording paths (Native vs Web) and processing rules. |
+| `mobile-android` | `.agents/skills/mobile-android/SKILL.md` | Android builds, Capacitor sync, and Gradle config. |
