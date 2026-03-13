@@ -1,10 +1,10 @@
 ---
 name: git-workflow
-description: "Authoritative Git workflow for TranscribeJS. Covers branch naming, Conventional Commits, PR procedures, and automated version synchronization across multiple files."
+description: "Authoritative Git workflow for TranscribeJS. Covers branch naming, Conventional Commits, local squash merges, and automated version synchronization across multiple files."
 ---
 # TranscribeJS Git Workflow Skill
 
-This skill provides the authoritative, end-to-end Git workflow for the TranscribeJS repository. It covers branch management, commit standards, Pull Request procedures, and the automated release process.
+This skill provides the authoritative, end-to-end Git workflow for the TranscribeJS repository. It covers branch management, commit standards, local squash merges to `main`, and the automated release process.
 
 ## 1. Branch Model
 
@@ -31,17 +31,21 @@ Every unit of work follows these steps:
 1. **Sync:** Pull latest `main` before branching.
 2. **Branch:** `git checkout -b <prefix>/description`.
 3. **Commit:** Make small, atomic commits using Conventional Commits format.
-4. **Validate:** `bun test && bun run build` must pass before pushing.
-5. **Push & PR:** Open a PR using the checklist template.
-6. **Squash merge:** Use `gh pr merge <PR> --squash --delete-branch`.
-7. **Clean up:** Delete local branch and pull updated `main`.
+4. **Validate:** `bun test && bun run build` must pass before squashing.
+5. **Squash locally:** Squash all branch commits into one Conventional Commit on `main`.
+   ```bash
+   git checkout main
+   git merge --squash <prefix>/description
+   git commit -m "<type>(<scope>): <description>"
+   ```
+6. **Push:** `git push origin main`.
+7. **Clean up:** Delete the local branch — `git branch -D <prefix>/description`.
 
 ## 3. Golden Rules for `main`
 
-- **No Direct Pushes:** Never push directly to `main` for source changes.
-- **Stable `main`:** `main` must always be buildable and pass tests.
-- **Review Required:** All changes land on `main` via reviewed Pull Requests.
 - **No Force Push:** Never use `git push --force` on `main`.
+- **Stable `main`:** `main` must always be buildable and pass tests.
+- **No Pull Requests:** Changes are squash-merged locally and pushed directly to `main`. Do not open PRs.
 
 ## 4. Conventional Commits Standard
 
@@ -89,34 +93,18 @@ grep -E '"version"' package.json src-tauri/tauri.conf.json && grep '^version' sr
 bun test && bun run build
 ```
 
-### Step 5 — PR and Tag
-1. Push branch: `git push -u origin release/vX.Y.Z`
-2. Create PR: `gh pr create --title "chore(release): prepare vX.Y.Z" --body "Release vX.Y.Z"`
-3. After merge, tag and push:
+### Step 5 — Squash, Push, and Tag
+1. Squash-merge into `main` and push:
 ```bash
 git checkout main && git pull origin main
+git merge --squash release/vX.Y.Z
+git commit -m "chore(release): prepare vX.Y.Z"
+git push origin main
+```
+2. Tag and push:
+```bash
 git tag -a vX.Y.Z -m "Release vX.Y.Z"
 git push origin vX.Y.Z
 ```
+3. Clean up: `git branch -D release/vX.Y.Z`
 
-## 6. Pull Request Checklist Template
-
-```markdown
-## Description
-<!-- One paragraph explaining what this PR does and why. -->
-
-## Type of change
-- [ ] `feat` | [ ] `fix` | [ ] `chore` | [ ] `refactor` | [ ] `ci` | [ ] `docs` | [ ] `perf` | [ ] `test`
-
-## Local validation
-- [ ] `bun test` passes
-- [ ] `bun run build` completes
-
-## Anti-regression checks
-- [ ] §6.1 — Version sync (if applicable)
-- [ ] §6.2 — Tauri CSP Guard
-- [ ] §6.3 — Dual Recording Path
-- [ ] §6.4 — TitleBar Integrity
-- [ ] §6.6 — Build Pipeline (Tailwind)
-- [ ] §6.10 — Header Layout Margin
-```
