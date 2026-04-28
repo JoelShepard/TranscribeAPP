@@ -19,6 +19,11 @@ const SUPPORTED_AUDIO_FORMATS = [
     extension: ".ogg",
     mimeTypes: ["audio/ogg"],
   },
+  {
+    label: "OPUS",
+    extension: ".opus",
+    mimeTypes: ["audio/opus", "audio/ogg;codecs=opus"],
+  },
 ] as const;
 
 const SUPPORTED_AUDIO_MIME_TYPES: ReadonlySet<string> = new Set(

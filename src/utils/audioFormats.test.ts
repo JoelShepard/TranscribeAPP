@@ -27,7 +27,7 @@ describe("isSupportedAudioFile", () => {
 
 describe("audio format metadata", () => {
   it("exposes all supported format labels for UI copy", () => {
-    expect(SUPPORTED_AUDIO_FORMATS_LABEL).toBe("WAV, MP3, M4A, OGG");
+    expect(SUPPORTED_AUDIO_FORMATS_LABEL).toBe("WAV, MP3, M4A, OGG, OPUS");
   });
 
   it("exports explicit file input accept value", () => {
@@ -35,9 +35,11 @@ describe("audio format metadata", () => {
     expect(AUDIO_FILE_INPUT_ACCEPT).toContain(".mp3");
     expect(AUDIO_FILE_INPUT_ACCEPT).toContain(".m4a");
     expect(AUDIO_FILE_INPUT_ACCEPT).toContain(".ogg");
+    expect(AUDIO_FILE_INPUT_ACCEPT).toContain(".opus");
     expect(AUDIO_FILE_INPUT_ACCEPT).toContain("audio/wav");
     expect(AUDIO_FILE_INPUT_ACCEPT).toContain("audio/mpeg");
     expect(AUDIO_FILE_INPUT_ACCEPT).toContain("audio/mp4");
     expect(AUDIO_FILE_INPUT_ACCEPT).toContain("audio/ogg");
+    expect(AUDIO_FILE_INPUT_ACCEPT).toContain("audio/opus");
   });
 });

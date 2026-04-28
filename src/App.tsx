@@ -45,6 +45,7 @@ import {
   isSupportedAudioFile,
   SUPPORTED_AUDIO_FORMATS_LABEL,
 } from "./utils/audioFormats";
+import { useSharedFile } from "./hooks/useSharedFile";
 import pkg from "../package.json";
 
 function cn(...inputs: ClassValue[]) {
@@ -576,6 +577,8 @@ export default function App() {
       setStatus("error");
     }
   };
+
+  useSharedFile(processAudio);
 
   const copyToClipboard = async () => {
     try {
